@@ -1,5 +1,5 @@
 # The Nexus
-A downtown district in a massive space station. A massive, collaborative universe we can build together.
+A downtown district in a massive space station. A collaborative universe we can build together.
 
 Watch this space. We're just getting started.
 

@@ -1,2 +1,21 @@
-# TheNexus
-A downtown district we can build together
+# The Nexus
+A downtown district in a massive space station. A massive, collaborative universe we can build together.
+
+Watch this space. We're just getting started.
+
+## What is this?
+The development repository for The Nexus project and all related planning and tracking.
+
+The Nexus is the downtown nightlife and entertainment district on Freeside Station. Featuring live music, entertainment, shopping and much more, it's neutral ground for teams to meet and build together.
+
+The first layer is hosted by Laguna Labs on behalf of Freeside Station Group, a DAO which will be owned by the core team, partners, builders and of course users.
+
+All assets will be released CC0, with MIT code, for anyone to use or remix for any reason. Connection to the first layer will be curated by the Nexus community board to ensure a high quality, optimized experience for users, but teams are encouraged to host their own layers and use what we build here as a basis for what they feel is important for their community.
+
+While this project will be delivered initially on the open source XREngine codebase, we hope to encourage teams to port and interop anywhere. XREngine is a full-stack meta-MMO solution that right now has a WebGL client, but will soon be adding support for Unreal Engine and Unity.
+
+## Who is working on it?
+Right now, it is being primarily built by partners in the XRFoundation / XREngine ecosystem, including Laguna Labs, SuperReality, Wild Capture and others.
+
+## How do I get involved?
+If you are committed to delivering a high quality, XR-compatible experience and want to participate in a shared sci-fi mashup universe with us then we will work to support you with the space and tools to build, moderate and experiment.

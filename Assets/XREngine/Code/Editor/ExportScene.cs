@@ -187,6 +187,12 @@ namespace XREngine
             {
                 Directory.CreateDirectory(PipelineSettings.ConversionFolder);
             }
+
+            DirectoryInfo outDir = new DirectoryInfo(exportFolder);
+            if(!outDir.Exists)
+            {
+                Directory.CreateDirectory(exportFolder);
+            }
                 
             var files = directory.GetFiles();
             var subDirectories = directory.GetDirectories();

@@ -115,6 +115,10 @@ dist
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+/[Oo]utputs/
+/[Aa]ssets/Bakery/
+/[Aa]ssets/[Ee]ditor/x64/[Bb]akery/
+
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data

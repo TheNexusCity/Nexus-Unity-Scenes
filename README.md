@@ -30,10 +30,10 @@ Unity >2020
 Export any Unity scene as a GLB with menu item XREngine->Export Scene. This will bring up an export configuration window. 
 
 ### Export Parameters
-*Name: name of the GLTF and GLB files. Enter without file extension.
-*Set Output Directory: By default, the scene will be exported into the /Outputs/GLB/ folder in the project.
-*Export Colliders: Toggles whether collider data will be included in export. Currently only box and mesh colliders are supported.
-*Export: Begins an export. Note that if you have a gameobject selected in editor, then only the selection is exported.
+-Name: name of the GLTF and GLB files. Enter without file extension.
+-Set Output Directory: By default, the scene will be exported into the /Outputs/GLB/ folder in the project.
+-Export Colliders: Toggles whether collider data will be included in export. Currently only box and mesh colliders are supported.
+-Export: Begins an export. Note that if you have a gameobject selected in editor, then only the selection is exported.
 
 ### Supported Components
 *Lights: point and direction light are currently supported.

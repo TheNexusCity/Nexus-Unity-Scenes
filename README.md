@@ -24,6 +24,7 @@ If you are committed to delivering a high quality, XR-compatible experience and 
 
 ## System Requirements
 NodeJS >12.0
+
 Unity >2020
 
 ## Getting Started

@@ -30,18 +30,18 @@ Unity >2020
 Export any Unity scene as a GLB with menu item XREngine->Export Scene. This will bring up an export configuration window. 
 
 ### Export Parameters
-Name: name of the GLTF and GLB files. Enter without file extension.
-Set Output Directory: By default, the scene will be exported into the /Outputs/GLB/ folder in the project.
-Export Colliders: Toggles whether collider data will be included in export. Currently only box and mesh colliders are supported.
-Export: Begins an export. Note that if you have a gameobject selected in editor, then only the selection is exported.
+*Name: name of the GLTF and GLB files. Enter without file extension.
+*Set Output Directory: By default, the scene will be exported into the /Outputs/GLB/ folder in the project.
+*Export Colliders: Toggles whether collider data will be included in export. Currently only box and mesh colliders are supported.
+*Export: Begins an export. Note that if you have a gameobject selected in editor, then only the selection is exported.
 
 ### Supported Components
-Lights: point and direction light are currently supported.
-Cameras: 
-Lightmaps: lightmaps are automatically combined with the diffuse channel and reprojected onto the mesh's uv0, then exported as an unlit material. Note that this will cause issues with instanced geometry.
-Colliders: box and mesh colliders are automatically configured and exported in XREngine compatible format.
-LODs: LOD Groups in Unity are automatically configured and exported. 
-Instancing: Any Gameobjects with share the same mesh and material will be instanced by default. Currently only meshes with one material are supported. As previously noted, baking lightmaps onto Gameobjects that share the same mesh and material will break instancing.
+*Lights: point and direction light are currently supported.
+*Cameras: 
+*Lightmaps: lightmaps are automatically combined with the diffuse channel and reprojected onto the mesh's uv0, then exported as an unlit material. Note that this will cause issues with instanced geometry.
+*Colliders: box and mesh colliders are automatically configured and exported in XREngine compatible format.
+*LODs: LOD Groups in Unity are automatically configured and exported. 
+*Instancing: Any Gameobjects with share the same mesh and material will be instanced by default. Currently only meshes with one material are supported. As previously noted, baking lightmaps onto Gameobjects that share the same mesh and material will break instancing.
 
 
 ## Known Issues

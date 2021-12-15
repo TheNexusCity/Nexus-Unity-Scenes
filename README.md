@@ -49,7 +49,7 @@ Colliders: box and mesh colliders are automatically configured and exported in X
 
 LODs: LOD Groups in Unity are automatically configured and exported. 
 
-Instancing: Any Gameobjects with share the same mesh and material will be instanced by default. Currently only meshes with one material are supported. As previously noted, baking lightmaps onto Gameobjects that share the same mesh and material will break instancing.
+Instancing: Any Gameobjects which share the same mesh and material will be instanced by default. Currently only meshes with one material are supported. As previously noted, baking lightmaps onto Gameobjects that share the same mesh and material will break instancing.
 
 
 ## Known Issues

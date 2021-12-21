@@ -28,6 +28,8 @@ NodeJS >12.0
 Unity >2020
 
 ## Getting Started
+Run the applicable 'init-pipeline' script from the root project directory.
+
 Export any Unity scene as a GLB with menu item XREngine->Export Scene. This will bring up an export configuration window. 
 
 ### Export Parameters

@@ -36,7 +36,7 @@ namespace SeinJS
             var com = node.GetComponent<SeinNodeClass>();
             if (com != null)
             {
-                extension.initOptions = com.Serialize(entry, extension);
+                //extension.initOptions = com.Serialize(entry, extension);
             }
 
             AddExtension(extensions, extension);

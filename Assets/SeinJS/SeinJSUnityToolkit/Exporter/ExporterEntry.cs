@@ -15,6 +15,7 @@ using System;
 using Newtonsoft.Json;
 using System.Text;
 using System.Text.RegularExpressions;
+using XREngine;
 
 namespace SeinJS
 {
@@ -580,30 +581,38 @@ namespace SeinJS
             var mid = material.GetInstanceID();
             int rid = -1;
             bool addLightMappedEntry = false;
-            if (renderer != null)
+            if (PipelineSettings.lightmapMode != LightmapMode.IGNORE && renderer != null)
             {
                 rid = renderer.lightmapIndex;
                 
                 if (rid >= 0)
                 {
-                    addLightMappedEntry = true;
+                    
+                    //
                     if (!_lightMapMat2ID.ContainsKey(mid))
                     {
                         _lightMapMat2ID[mid] = new Dictionary<int, MaterialId>();
                     }
-                    /*
+                    ///*
                     
-
-                    if (_lightMapMat2ID[mid].ContainsKey(rid))
+                    if(PipelineSettings.lightmapMode == LightmapMode.BAKE_COMBINED)
                     {
-                        return _lightMapMat2ID[mid][rid];
+                        addLightMappedEntry = true;
                     }
                     else
                     {
-                        addLightMappedEntry = true;
-                        
+                        if (_lightMapMat2ID[mid].ContainsKey(rid))
+                        {
+                            return _lightMapMat2ID[mid][rid];
+                        }
+                        else
+                        {
+                            addLightMappedEntry = true;
+
+                        }
                     }
-                    */
+                    
+                    //*/
                 }
             }
 
@@ -686,9 +695,9 @@ namespace SeinJS
             var samplerId = GenerateSampler(texture);
 
             var extName = ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory));
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory)), this, root.Extensions, texture, new CubeTextureSaveOptions{
+            /*ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory)), this, root.Extensions, texture, new CubeTextureSaveOptions{
                 maxSize = maxSize, sampler = samplerId, hasTransparency = hasTransparency, path = path, hdrType = hdrType
-            });
+            });*/
 
             var id = new CubeTextureId { Id = ((Sein_cubeTextureExtension)root.Extensions[extName]).textures.Count - 1, Root = root };
             _cubemap2ID[texture] = id;
@@ -711,10 +720,10 @@ namespace SeinJS
             }
 
             var extName = ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory));
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory)), this, root.Extensions, null, new CubeTextureSaveOptions{
+            /*ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_cubeTextureExtensionFactory)), this, root.Extensions, null, new CubeTextureSaveOptions{
                 maxSize = maxSize, textures = textures, sampler = samplerId, hasTransparency = hasTransparency, path = path, hdrType = hdrType
             });
-
+            */
              var id = new CubeTextureId { Id = ((Sein_cubeTextureExtension)root.Extensions[extName]).textures.Count - 1, Root = root };
             _cubemap2ID[textures[0]] = id;
 
@@ -861,7 +870,7 @@ namespace SeinJS
 
             var gltfTexture = new GLTF.Schema.Texture { Source = imageId, Sampler = samplerId, Extensions = new Dictionary<string, Extension>() };
 
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_textureImproveExtensionFactory)), this, gltfTexture.Extensions, texture);
+            //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_textureImproveExtensionFactory)), this, gltfTexture.Extensions, texture);
 
             root.Textures.Add(gltfTexture);
 
@@ -1054,7 +1063,7 @@ namespace SeinJS
 
             if (ExporterSettings.Export.skybox) {
                 cam.Extensions = new Dictionary<string, Extension>();
-                ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_skyboxExtensionFactory)), this, cam.Extensions, camera);
+                //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_skyboxExtensionFactory)), this, cam.Extensions, camera);
             }
 
             return cam;

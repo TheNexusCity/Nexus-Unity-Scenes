@@ -42,7 +42,7 @@ namespace SeinJS
 
         public virtual List<EExtensionType> GetExtensionTypes()
         {
-            return new List<EExtensionType> { EExtensionType.Node };
+            return new List<EExtensionType> { };// EExtensionType.Node };
         }
 
         public virtual void BeforeExport()

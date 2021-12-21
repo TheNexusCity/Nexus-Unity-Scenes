@@ -53,12 +53,12 @@ namespace SeinJS
 
             // gamma and hdr setting
             entry.root.Extensions = new Dictionary<string, Extension>();
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_rendererExtensionFactory)), entry, entry.root.Extensions);
+            //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_rendererExtensionFactory)), entry, entry.root.Extensions);
 
             // if ambientMode is not Flat, use sein_imageBaseLighting extension
             if (ExporterSettings.Lighting.ambient && RenderSettings.ambientMode == UnityEngine.Rendering.AmbientMode.Flat)
             {
-                ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_ambientLightExtensionFactory)), entry, entry.root.Extensions);
+                //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_ambientLightExtensionFactory)), entry, entry.root.Extensions);
             }
 
 

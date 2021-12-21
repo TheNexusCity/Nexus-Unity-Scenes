@@ -27,7 +27,7 @@ namespace SeinJS
             {
                 entry.root.Extensions = new Dictionary<string, Extension>();
             }
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_audioClipsExtensionFactory)), entry, entry.root.Extensions, component);
+            //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_audioClipsExtensionFactory)), entry, entry.root.Extensions, component);
 
             var extension = new Sein_audioSourceExtension();
             var source = component as SeinAudioSource;

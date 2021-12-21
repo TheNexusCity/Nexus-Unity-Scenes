@@ -20,20 +20,22 @@ namespace SeinJS
 
         public override void Serialize(ExporterEntry entry, Dictionary<string, Extension> extensions, UnityEngine.Object component = null, object options = null)
         {
-            Sein_rendererExtension extension;
+            //Sein_rendererExtension extension;
 
             if (component == null)
             {
+                /*
                 extension = new Sein_rendererExtension {
                     isGlobal = true,
                     gammaCorrection = PlayerSettings.colorSpace == ColorSpace.Linear,
                     //@todo: support hdr
                     useHDR = false,
                     exposure = 0
-                };
+                };*/
             }
             else
             {
+                /*
                 extension = new Sein_rendererExtension { isGlobal = false };
                 var mr = component as Renderer;
 
@@ -50,10 +52,10 @@ namespace SeinJS
                 }
 
                 extension.castShadows = mr.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.On;
-                extension.receiveShadows = mr.receiveShadows;
+                extension.receiveShadows = mr.receiveShadows;*/
             }
 
-            AddExtension(extensions, extension);
+            //AddExtension(extensions, extension);
         }
 
         public override Extension Deserialize(GLTFRoot root, JProperty extensionToken)

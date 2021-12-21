@@ -9,6 +9,12 @@ using System.Text.RegularExpressions;
 
 namespace XREngine
 {
+    public enum LightmapMode
+    {
+        IGNORE,
+        BAKE_COMBINED,
+        BAKE_SEPARATE
+    }
     public class PipelineSettings
     {
 
@@ -18,7 +24,7 @@ namespace XREngine
         public static string PipelineFolder = Application.dataPath + "/../Pipeline/";
         public static bool ExportColliders;
 
-        public static bool CombineLightmaps;
+        public static LightmapMode lightmapMode;
 
         public static int CombinedTextureResolution = 2048;
 

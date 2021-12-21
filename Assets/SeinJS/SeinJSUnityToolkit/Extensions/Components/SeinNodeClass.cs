@@ -210,7 +210,7 @@ public class SeinNodeClass : MonoBehaviour
 
     public virtual SeinJS.SeinNodeOption SerializeValue(SeinJS.ExporterEntry entry, SeinAtlas option)
     {
-        ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_atlasExtensionFactory)), entry, entry.root.Extensions, option);
+        //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_atlasExtensionFactory)), entry, entry.root.Extensions, option);
         var atlasId = Sein_atlasExtensionFactory.GetAtlasIndex(entry, option);
         return new SeinJS.SeinNodeOption("Atlas", new JObject(new JProperty("index", atlasId)));
     }

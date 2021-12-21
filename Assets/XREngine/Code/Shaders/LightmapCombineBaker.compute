@@ -183,7 +183,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     else
     {
         inTriMap[uint2(x, y)] = 0;
-        Result[uint2(x, y)] = albedo;
+        Result[uint2(x, y)] = 0;
     }
 }
 

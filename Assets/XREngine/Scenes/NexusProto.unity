@@ -123,47 +123,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!114 &67927585
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ec0b4dd729a12d046982652f834580a2, type: 3}
-  m_Name: NexusProto_LMA1
-  m_EditorClassIdentifier: 
-  resolution: 2048
-  bitmask: 1
-  id: 1
-  sortingID: 1
-  isImplicit: 1
-  area: 0
-  totalVertexCount: 0
-  vertexCounter: 0
-  sceneLodLevel: -1
-  sceneName: NexusProto
-  containsTerrains: 0
-  probes: 0
-  mode: 1
-  renderMode: 1000
-  renderDirMode: 1000
-  atlasPacker: 1000
-  computeSSS: 0
-  sssSamples: 16
-  sssDensity: 10
-  sssColor: {r: 1, g: 1, b: 1, a: 1}
-  sssScale: 1
-  fakeShadowBias: 0
-  transparentSelfShadow: 0
-  flipNormal: 0
-  parentName: 
-  overridePath: 
-  fixPos3D: 0
-  voxelSize: {x: 1, y: 1, z: 1}
-  passedFilter: 0
 --- !u!850595691 &581356705
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -226,6 +185,47 @@ LightingSettings:
   m_PVRFilteringAtrousPositionSigmaIndirect: 2
   m_PVRFilteringAtrousPositionSigmaAO: 1
   m_PVRTiledBaking: 0
+--- !u!114 &615300988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec0b4dd729a12d046982652f834580a2, type: 3}
+  m_Name: NexusProto_LM0
+  m_EditorClassIdentifier: 
+  resolution: 2048
+  bitmask: 1
+  id: 0
+  sortingID: 0
+  isImplicit: 1
+  area: 6374848.5
+  totalVertexCount: 0
+  vertexCounter: 0
+  sceneLodLevel: -1
+  sceneName: NexusProto
+  containsTerrains: 0
+  probes: 0
+  mode: 1
+  renderMode: 1000
+  renderDirMode: 1000
+  atlasPacker: 1000
+  computeSSS: 0
+  sssSamples: 16
+  sssDensity: 10
+  sssColor: {r: 1, g: 1, b: 1, a: 1}
+  sssScale: 1
+  fakeShadowBias: 0
+  transparentSelfShadow: 0
+  flipNormal: 0
+  parentName: 
+  overridePath: 
+  fixPos3D: 0
+  voxelSize: {x: 1, y: 1, z: 1}
+  passedFilter: 0
 --- !u!1001 &878083939
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1679,7 +1679,7 @@ MonoBehaviour:
   renderSettingsClientMode: 0
   renderSettingsServerAddress: 127.0.0.1
   renderSettingsUnwrapper: 1
-  renderSettingsDenoiserType: 5
+  renderSettingsDenoiserType: 100
   renderSettingsExportTerrainTrees: 0
   renderSettingsShowPerf: 1
   renderSettingsSampleDiv: 1
@@ -1691,7 +1691,7 @@ MonoBehaviour:
   renderSettingsRTPVSceneView: 0
   renderSettingsRTPVWidth: 640
   renderSettingsRTPVHeight: 360
-  lastBakeTime: 57
+  lastBakeTime: 30
   enlightenWarningShown: 0
   enlightenWarningShown2: 0
   lightUIDs: 34699204
@@ -1727,91 +1727,91 @@ MonoBehaviour:
     cookie: {fileID: 0}
     angle: 30
   implicitGroups:
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 67927585}
-  - {fileID: 67927585}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 67927585}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
-  - {fileID: 1319754885}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 1750113761}
+  - {fileID: 1750113761}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 1750113761}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
+  - {fileID: 615300988}
   implicitGroupedObjects:
   - {fileID: 878083940}
   - {fileID: 878083942}
@@ -2207,8 +2207,8 @@ MonoBehaviour:
   sectors:
   - name: $G
     maps:
-    - {fileID: 2800000, guid: 8ba3786f13f48d543a6392f459cf9630, type: 3}
-    - {fileID: 2800000, guid: 3bcbdf09e0fd5b24fbadb05212599024, type: 3}
+    - {fileID: 2800000, guid: e6b4f7ab4c989a84fa12039445e09e1c, type: 3}
+    - {fileID: 2800000, guid: af7ee17384c15b442a1e25860be39910, type: 3}
     masks: []
     dirMaps: []
     rnmMaps0: []
@@ -2386,8 +2386,8 @@ MonoBehaviour:
     - {x: 0.03653358, y: 0.036043268, z: 0.08934531, w: 0.9201509}
     - {x: 0.039412837, y: 0.039017122, z: 0.29369155, w: 0.83706117}
     - {x: 0.0256917, y: 0.02608306, z: 0.81004375, w: 0.9277945}
-    - {x: 0.027059428, y: 0.02809535, z: 0.7507758, w: 0.069171146}
     - {x: 0.027059428, y: 0.028095348, z: 0.111167006, w: 0.028095348}
+    - {x: 0.027059428, y: 0.02809535, z: 0.7507758, w: 0.069171146}
     - {x: 0.026191952, y: 0.026596257, z: 0.52888143, w: 0.92243975}
     - {x: 0.0448991, y: 0.044038665, z: 0.674728, w: 0.28658146}
     bakedScaleOffsetTerrain: []
@@ -2515,7 +2515,29 @@ MonoBehaviour:
   updateOnEverTick: 1
   isStatic: 0
   skipThisNode: 0
---- !u!114 &1319754885
+--- !u!114 &943412569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 878084108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c9c2a060d5234abf96a35acd112c9b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  selfType: 2
+  childrenType: 1
+  className: 
+  tag: 
+  layer: 268435455
+  persistent: 0
+  emitComponentsDestroy: 1
+  updateOnEverTick: 1
+  isStatic: 0
+  skipThisNode: 0
+--- !u!114 &1750113761
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2525,14 +2547,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ec0b4dd729a12d046982652f834580a2, type: 3}
-  m_Name: NexusProto_LM0
+  m_Name: NexusProto_LMA1
   m_EditorClassIdentifier: 
   resolution: 2048
   bitmask: 1
-  id: 0
-  sortingID: 0
+  id: 1
+  sortingID: 1
   isImplicit: 1
-  area: 6374848.5
+  area: 0
   totalVertexCount: 0
   vertexCounter: 0
   sceneLodLevel: -1

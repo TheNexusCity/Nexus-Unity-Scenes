@@ -84,6 +84,10 @@ namespace XREngine
             }
             GUILayout.Space(8);
             PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Export Colliders", PipelineSettings.ExportColliders);
+            GUILayout.Space(8);
+            PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
+
+
             if(GUILayout.Button("Export"))
             {
                 Export();

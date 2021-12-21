@@ -15,6 +15,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using XREngine;
+using XREngine.GLTF;
 
 namespace SeinJS
 {
@@ -424,7 +425,11 @@ namespace SeinJS
             bool hasLightmap = renderer != null && renderer.lightmapIndex >= 0;
 
             bool isMetal = mat.GetInt("workflow") == 0;
-            bool isUnlit = mat.GetInt("unlit") == 1 || hasLightmap;
+            bool isUnlit = mat.GetInt("unlit") == 1;
+            bool doCombineBake = PipelineSettings.lightmapMode == LightmapMode.BAKE_COMBINED && hasLightmap;
+            bool doDualBake = PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE && hasLightmap;
+            if (doCombineBake)
+                isUnlit = true;
             if (!isMetal)
             {
                 // special
@@ -441,7 +446,7 @@ namespace SeinJS
 
             if (isUnlit || isMetal)
             {
-                if (mat.GetTexture("_baseColorMap") != null || hasLightmap)
+                if (mat.GetTexture("_baseColorMap") != null || doCombineBake)
                 {
                     var tex = (Texture2D)mat.GetTexture("_baseColorMap");
                     if(tex == null)
@@ -452,50 +457,19 @@ namespace SeinJS
 
                         tex = new Texture2D(lightmapCol.width, lightmapCol.height);
                     }
-                    //else
-                    //{
-                        /*if(tex.format != TextureFormat.RGBA32)
-                        {
-                            Texture2D temp = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
-                            
-                            tex = temp;
-                        }*/
-                        if (hasLightmap)
-                        {
-                            var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
-                            var lightmapParms = LightmapSettings.lightmaps[renderer.lightmapIndex];
 
-                            var lightmapCol = lightmapParms.lightmapColor;
+                    if (doCombineBake)
+                    {
+                        var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                        var lightmapParms = LightmapSettings.lightmaps[renderer.lightmapIndex];
+
+                        var lightmapCol = lightmapParms.lightmapColor;
 
 
-                            tex = GenerateBakedDiffuse(tex, lightmapCol, mesh, renderer);
-                            /*
-                            ReverseUV uvLookup = new ReverseUV(mesh);
-                            for (int i = 0; i < lightmap.Length; i++)
-                            {
-                                int x = i % lightmapTex.width;
-                                int y = i / lightmapTex.width;
-                                float u = x * 1f / lightmapTex.width;
-                                float v = y * 1f / lightmapTex.height;
+                        tex = GenerateBakedDiffuse(tex, lightmapCol, mesh, renderer);
 
-                                Vector2 pt = new Vector2(u, v);
+                    }
 
-                                Vector2 uv0 = uvLookup.UVAt(pt, 1, 0);
-                                if(!uv0.Equals(Vector2.negativeInfinity))
-                                {
-                                    Color samp = tex.GetPixelBilinear(uv0.x, uv0.y);
-                                    lightmap[i] = lightmap[i] * samp;
-                                }
-                            
-                            }
-                            lightmapTex.SetPixels(lightmap);
-                            lightmapTex.Apply();
-
-                            tex = lightmapTex;
-                            */
-                            //mat.SetTexture("_baseColorMap", tex);
-                        }
-                    //}
                     var id = entry.SaveTexture(tex, hasTransparency);
                     material.PbrMetallicRoughness.BaseColorTexture = new TextureInfo { Index = id , TexCoord = 0 };
                 }
@@ -524,7 +498,7 @@ namespace SeinJS
                     Texture2D roughnessTexture = (Texture2D)mat.GetTexture("_roughnessMap");
                     Texture2D occlusion = (Texture2D)mat.GetTexture("_occlusionMap");
 
-                    if (renderer.lightmapIndex >= 0)
+                    if (hasLightmap)
                     {
                         var lightmap = LightmapSettings.lightmaps[renderer.lightmapIndex];
                         occlusion = lightmap.shadowMask;
@@ -537,8 +511,6 @@ namespace SeinJS
                     var ext = Path.GetExtension(assetPath);
                     var id = entry.SaveTexture(metalRoughTextureAo, hasTransparency, assetPath.Replace(ext, "-orm") + ext);
                     material.PbrMetallicRoughness.MetallicRoughnessTexture = new TextureInfo { Index = id };
-
-
 
                     if (occlusion != null)
                     {
@@ -559,11 +531,11 @@ namespace SeinJS
                 TextureInfo diffuseMap = null;
                 var diffuseColor = new GLTF.Math.Color();
 
-                if (mat.GetTexture("_baseColorMap") != null || renderer.lightmapIndex >= 0)
+                if (mat.GetTexture("_baseColorMap") != null || doCombineBake)
                 {
                     var tex = (Texture2D)mat.GetTexture("_baseColorMap");
                     
-                    if(renderer.lightmapIndex >= 0)
+                    if(doCombineBake)
                     {
                         var lightmap = LightmapSettings.lightmaps[renderer.lightmapIndex];
                         if (tex == null)
@@ -572,43 +544,12 @@ namespace SeinJS
                                 PipelineSettings.CombinedTextureResolution) ;
                         }
 
-                    
-                    
                         var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                         var lightmapParms = LightmapSettings.lightmaps[renderer.lightmapIndex];
 
                         var lightmapCol = lightmapParms.lightmapColor;
 
-                        
-
                         tex = GenerateBakedDiffuse(tex, lightmapCol, mesh, renderer);
-                    /*
-                        var lightmapP = lightmapTex.GetPixels();
-                        SetTextureImporterFormat(tex, true);
-
-                        ReverseUV uvLookup = new ReverseUV(mesh);
-                        for (int i = 0; i < lightmapP.Length; i++)
-                        {
-                            int x = i % lightmapTex.width;
-                            int y = i / lightmapTex.width;
-                            float u = x * 1f / lightmapTex.width;
-                            float v = y * 1f / lightmapTex.height;
-
-                            Vector2 pt = new Vector2(u, v);
-
-                            Vector2 uv0 = uvLookup.UVAt(pt, 1, 0);
-                            if(uv0 != Vector2.negativeInfinity)
-                            {
-                                Color samp = tex.GetPixelBilinear(uv0.x, uv0.y);
-                                lightmapP[i] = lightmapP[i] * samp;
-                            }
-                        
-                        }
-
-                        lightmapTex.SetPixels(lightmapP);
-                        lightmapTex.Apply();
-
-                        tex = lightmapTex;*/
                     }
                     var id = entry.SaveTexture(tex, hasTransparency);
                     diffuseMap = new TextureInfo { Index = id, TexCoord = 0 };
@@ -652,6 +593,8 @@ namespace SeinJS
                         Strength = mat.GetFloat("_occlusionStrength")
                     };
                 }
+
+                
             }
 
             if (mat.GetTexture("_normalMap") != null)
@@ -660,6 +603,11 @@ namespace SeinJS
                 {
                     Index = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap"), false),
                 };
+            }
+
+            if (hasLightmap && doDualBake)
+            {
+                ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(MOZ_lightmap_Factory)), entry, material.Extensions, component: renderer);
             }
 
             if (mat.GetTexture("_emissionMap") != null)
@@ -682,7 +630,7 @@ namespace SeinJS
                 {
                     material.Extensions = new Dictionary<string, Extension>();
                 }
-                ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_imageBasedLightingExtensionFactory)), entry, material.Extensions, mat);
+                //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_imageBasedLightingExtensionFactory)), entry, material.Extensions, mat);
             }
 
             return material;
@@ -818,7 +766,7 @@ namespace SeinJS
                 material.AlphaMode = AlphaMode.BLEND;
             }
 
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_customMaterialExtensionFactory)), entry, material.Extensions, mat);
+            //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_customMaterialExtensionFactory)), entry, material.Extensions, mat);
             return material;
         }
 

@@ -28,6 +28,8 @@ namespace SeinJS
             {
                 if (clazz.IsClass && !clazz.IsAbstract && clazz.IsSubclassOf(typeof(SeinExtensionFactory)))
                 {
+                    if (clazz == typeof(Sein_rendererExtensionFactory)) continue;
+                    if (clazz == typeof(Sein_nodeExtensionFactory)) continue;
                     Register(clazz);
                 }
             }

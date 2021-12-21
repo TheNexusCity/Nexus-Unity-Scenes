@@ -71,7 +71,7 @@ namespace SeinJS
             }
 
             // process atlases at first
-            ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_atlasExtensionFactory)), entry, entry.root.Extensions, sprite.atlas);
+            //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_atlasExtensionFactory)), entry, entry.root.Extensions, sprite.atlas);
             var s = new Sein_spriteExtension.Sprite();
             s.width = sprite.width;
             s.height = sprite.height;

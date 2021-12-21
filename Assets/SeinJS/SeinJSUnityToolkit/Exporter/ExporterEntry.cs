@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using System.Text;
 using System.Text.RegularExpressions;
 using XREngine;
+using System.Linq;
 
 namespace SeinJS
 {
@@ -245,24 +246,29 @@ namespace SeinJS
             {
                 cacheId += mat.GetInstanceID();
             }
-
+            bool hasLightmap = renderer.lightmapIndex >= 0;
+            if(PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE && hasLightmap)
+            {
+                var off = renderer.lightmapScaleOffset;
+                cacheId += string.Format("{0}_{1}-{2}-{3}-{4}", renderer.lightmapIndex, off.x, off.y, off.z, off.w);
+            }
 
             if (_mesh2Id.ContainsKey(mesh) && _mesh2Id[mesh].ContainsKey(cacheId))
             {
                 return new Pair<MeshId, bool>(_mesh2Id[mesh][cacheId], false);
             }
 
-            bool hasLightmap = renderer.lightmapIndex >= 0;
-            /*
-            Vector2[] tmpUV = null;
-            
-            if (hasLightmap) //if we're baking lightmaps, set uv0 to lightmap uvs
+            if(PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE &&
+                hasLightmap) //threejs does not currently (december 2021) support lightmap scaling or offsetting. thus 
+                //we must bake the lightmap scale and offset into the mesh uv2. if two instances of the same mesh
+                //have different offsets, then the mesh is duplicated, with each having their respective lightmap scaleoffset
+                //baked into their uv2
             {
-                tmpUV = mesh.uv;
-                mesh.uv = mesh.uv2;
-                mesh.UploadMeshData(false);
+                UnityEngine.Mesh nuMesh = UnityEngine.Mesh.Instantiate(mesh);
+                var off = renderer.lightmapScaleOffset;
+                nuMesh.uv2 = mesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
+                mesh = nuMesh;
             }
-            */
             var attributes = GenerateAttributes(mesh, hasLightmap);
             var targets = GenerateMorphTargets(mesh, renderer, m);
             m.Name = mesh.name;

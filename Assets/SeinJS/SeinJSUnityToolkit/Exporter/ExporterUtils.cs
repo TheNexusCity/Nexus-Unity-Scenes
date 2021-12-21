@@ -607,6 +607,13 @@ namespace SeinJS
 
             if (hasLightmap && doDualBake)
             {
+                //three js doesn't support lightmap offsets or scales, so we must bake those into the mesh's uv2s
+               /* var meshFilt = renderer.GetComponent<MeshFilter>();
+                var oldMesh = meshFilt.sharedMesh;
+                var mesh = UnityEngine.Mesh.Instantiate(oldMesh);
+                var offset = renderer.lightmapScaleOffset;
+                mesh.uv2 = mesh.uv2.Select((uv2) => uv2 / new Vector2(offset.x, offset.y) - new Vector2(offset.z, offset.w)).ToArray();
+                meshFilt.sharedMesh = mesh;*/
                 ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(MOZ_lightmap_Factory)), entry, material.Extensions, component: renderer);
             }
 

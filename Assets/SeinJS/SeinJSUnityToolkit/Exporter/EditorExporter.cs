@@ -51,9 +51,32 @@ namespace SeinJS
             root.Scenes.Add(new Scene());
             root.Scene = new SceneId{ Id = 0, Root = root };
 
+
+
             // gamma and hdr setting
             entry.root.Extensions = new Dictionary<string, Extension>();
             //ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(Sein_rendererExtensionFactory)), entry, entry.root.Extensions);
+
+            if (PipelineSettings.ExportSkybox)
+            {
+                var skyMat = RenderSettings.skybox;
+                var cubemap = skyMat.GetTexture("_Tex") as Cubemap;
+
+                var cubeID = entry.SaveCubeTexture(cubemap);
+                
+                var skyboxNode = new Node
+                {
+                    Name = "skybox-node",
+                    Extensions = new Dictionary<string, Extension>()
+                };
+                skyboxNode.Extras = new JObject
+                (
+                       new JProperty("realitypack.skybox", new JObject()),
+                       new JProperty("backgroundType", 1)  //SkyEnumType.cubemap = 1
+                       
+                       //new JProperty(""
+                );
+            }
 
             // if ambientMode is not Flat, use sein_imageBaseLighting extension
             if (ExporterSettings.Lighting.ambient && RenderSettings.ambientMode == UnityEngine.Rendering.AmbientMode.Flat)

@@ -599,10 +599,16 @@ namespace SeinJS
 
             if (mat.GetTexture("_normalMap") != null)
             {
-                material.NormalTexture = new NormalTextureInfo
+                var normMap = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap"));
+                if(material.Extras == null)
                 {
-                    Index = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap"), false),
-                };
+                    material.Extras = new JObject();
+                }
+                material.Extras = (new JProperty("normalMap", normMap.Id));
+                /*material.NormalTexture = new NormalTextureInfo
+                {
+                    Index = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap")),
+                };*/
             }
 
             if (hasLightmap && doDualBake)
@@ -614,7 +620,12 @@ namespace SeinJS
                 var offset = renderer.lightmapScaleOffset;
                 mesh.uv2 = mesh.uv2.Select((uv2) => uv2 / new Vector2(offset.x, offset.y) - new Vector2(offset.z, offset.w)).ToArray();
                 meshFilt.sharedMesh = mesh;*/
+               if(material.Extensions == null)
+                {
+                    material.Extensions = new Dictionary<string, Extension>();
+                }
                 ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(MOZ_lightmap_Factory)), entry, material.Extensions, component: renderer);
+                ExtensionManager.Serialize(ExtensionManager.GetExtensionName(typeof(KHR_materials_unlitExtensionFactory)), entry, material.Extensions);
             }
 
             if (mat.GetTexture("_emissionMap") != null)

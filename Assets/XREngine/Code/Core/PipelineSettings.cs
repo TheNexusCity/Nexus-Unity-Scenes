@@ -23,10 +23,14 @@ namespace XREngine
 
         public static string PipelineFolder = Application.dataPath + "/../Pipeline/";
         public static bool ExportColliders;
+        public static bool ExportSkybox;
+
 
         public static LightmapMode lightmapMode;
+        
+        
 
-        public static int CombinedTextureResolution = 2048;
+        public static int CombinedTextureResolution = 4096;
 
         internal static void ClearPipelineJunk()
         {

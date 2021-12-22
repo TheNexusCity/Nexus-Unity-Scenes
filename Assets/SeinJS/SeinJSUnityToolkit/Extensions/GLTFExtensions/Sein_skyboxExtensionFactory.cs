@@ -33,7 +33,7 @@ namespace SeinJS
             else if (camera.clearFlags == CameraClearFlags.Skybox)
             {
                 var mat = RenderSettings.skybox;
-
+                return;
                 if (mat == null)
                 {
                     Debug.LogWarning("Use skybox as camera clear flag, but skybox is not defined, ignore... Check 'http://seinjs.com/cn/tutorial/artist/reflection'");

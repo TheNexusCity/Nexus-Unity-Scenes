@@ -161,8 +161,8 @@ namespace SeinJS
             if (colliderParent != null)
             {
                 extras = new JProperty("extras", new JObject(
-                    new JProperty("xrengine.collider.bodyType", 0),
-                    new JProperty("xrengine.entity", tr.name)
+                    new JProperty("realitypack.collider.bodyType", 0),
+                    new JProperty("realitypack.entity", tr.name)
                 ));
             }
             else
@@ -193,13 +193,21 @@ namespace SeinJS
                     else
                         extras = new JProperty("extras", new JObject());
                 }
-
                 else
                     extras = new JProperty("extras", new JObject());
 
             }
-            
 
+            //check for realitypack components
+            var rp = tr.GetComponent<RPComponent>();
+            if(rp)
+            {
+                extras = new JProperty("extras", new JObject
+                    (
+                        new JProperty(rp.Type, new JObject()),
+                        new JProperty("realitypack.entity", tr.name)
+                    ));
+            }
             
 
             node.Extras = extras;

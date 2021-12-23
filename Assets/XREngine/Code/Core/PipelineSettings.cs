@@ -15,11 +15,13 @@ namespace XREngine
         BAKE_COMBINED,
         BAKE_SEPARATE
     }
-    public class PipelineSettings
+
+    [System.Serializable]
+    public static class PipelineSettings
     {
 
         public static string ConversionFolder = Application.dataPath + "/../Outputs/GLTF/";
-        public static string DefaultExportFolder = Application.dataPath + "/../Outputs/GLB/";
+        public static string XREProjectFolder;// = Application.dataPath + "/../Outputs/GLB/";
 
         public static string PipelineFolder = Application.dataPath + "/../Pipeline/";
         public static bool ExportColliders;

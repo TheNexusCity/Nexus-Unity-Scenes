@@ -36,7 +36,7 @@ namespace XREngine
             {
                 if(exportFolder == null)
                 {
-                    exportFolder = PipelineSettings.DefaultExportFolder;
+                    exportFolder = PipelineSettings.XREProjectFolder;
                 }
                 if(fileName == null)
                 {
@@ -85,7 +85,7 @@ namespace XREngine
             GUILayout.Space(8);
             GUILayout.Label("Export Components:");
             PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
-            //PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
+            PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
             GUILayout.Space(8);
             PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
 

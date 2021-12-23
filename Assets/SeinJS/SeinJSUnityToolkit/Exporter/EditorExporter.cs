@@ -11,6 +11,8 @@ using GLTF;
 using GLTF.Schema;
 using Newtonsoft.Json.Linq;
 using XREngine;
+using System.Text.RegularExpressions;
+using System.IO;
 
 namespace SeinJS
 {
@@ -61,21 +63,26 @@ namespace SeinJS
             {
                 var skyMat = RenderSettings.skybox;
                 var cubemap = skyMat.GetTexture("_Tex") as Cubemap;
+                string srcPath = AssetDatabase.GetAssetPath(cubemap);
+                string srcName = Regex.Match(srcPath, @"(?<=.*/)\w*\.hdr").Value;
+                string nuPath = Path.Combine(PipelineSettings.XREProjectFolder, srcName);
+                
+                AssetDatabase.CopyAsset(srcPath, nuPath);
 
-                var cubeID = entry.SaveCubeTexture(cubemap);
+                //var cubeID = entry.SaveCubeTexture(cubemap);
                 
                 var skyboxNode = new Node
                 {
                     Name = "skybox-node",
                     Extensions = new Dictionary<string, Extension>()
                 };
-                skyboxNode.Extras = new JObject
+                skyboxNode.Extras = new JProperty("extras", new JObject
                 (
                        new JProperty("realitypack.skybox", new JObject()),
-                       new JProperty("backgroundType", 1)  //SkyEnumType.cubemap = 1
-                       
+                       new JProperty("backgroundType", 1), //SkyEnumType.cubemap = 1
+                       new JProperty("cubemapPath", srcName)
                        //new JProperty(""
-                );
+                ));
             }
 
             // if ambientMode is not Flat, use sein_imageBaseLighting extension

@@ -17,7 +17,7 @@ namespace XREngine
     }
 
     [System.Serializable]
-    public static class PipelineSettings
+    public class PipelineSettings
     {
 
         public static string ConversionFolder = Application.dataPath + "/../Outputs/GLTF/";

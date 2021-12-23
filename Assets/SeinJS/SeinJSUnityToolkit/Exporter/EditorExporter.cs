@@ -13,6 +13,7 @@ using Newtonsoft.Json.Linq;
 using XREngine;
 using System.Text.RegularExpressions;
 using System.IO;
+using System.Linq;
 
 namespace SeinJS
 {
@@ -64,10 +65,35 @@ namespace SeinJS
                 var skyMat = RenderSettings.skybox;
                 var cubemap = skyMat.GetTexture("_Tex") as Cubemap;
                 string srcPath = AssetDatabase.GetAssetPath(cubemap);
-                string srcName = Regex.Match(srcPath, @"(?<=.*/)\w*\.hdr").Value;
+                string srcName = Regex.Match(srcPath, @"(?<=.*/)\w*(?=\.hdr)").Value;
                 string nuPath = Path.Combine(PipelineSettings.XREProjectFolder, srcName);
-                
-                AssetDatabase.CopyAsset(srcPath, nuPath);
+                var cubemapDir = new DirectoryInfo(nuPath);
+                if(!cubemapDir.Exists)
+                {
+                    cubemapDir.Create();
+                }
+
+                CubemapFace[] faces = Enumerable.Range(0, 6).Select((i) => (CubemapFace)i).ToArray();
+                string[] fNames = new string[]
+                {
+                    "posX",
+                    "negX",
+                    "poxY",
+                    "negY",
+                    "posZ",
+                    "negZ"
+                };
+                Texture2D[] faceTexes = faces.Select((x, i) =>
+                {
+                    Texture2D result = new Texture2D(cubemap.width, cubemap.height);// cubemap.format, false);
+                    result.SetPixels(cubemap.GetPixels(x));
+                    result.Apply();
+                    string facePath = string.Format("{0}/{1}.png", cubemapDir, fNames[i]);
+                    File.WriteAllBytes(facePath, result.EncodeToPNG());
+                    return result;
+                }).ToArray();
+                 
+                //AssetDatabase.CopyAsset(srcPath, nuPath);
 
                 //var cubeID = entry.SaveCubeTexture(cubemap);
                 
@@ -80,9 +106,14 @@ namespace SeinJS
                 (
                        new JProperty("realitypack.skybox", new JObject()),
                        new JProperty("backgroundType", 1), //SkyEnumType.cubemap = 1
-                       new JProperty("cubemapPath", srcName)
-                       //new JProperty(""
-                ));
+                       new JProperty("cubemapPath", "/cubemap/"))//srcName)
+                //new JProperty(""
+                );
+                if(entry.root.Nodes == null)
+                {
+                    entry.root.Nodes = new List<Node>();
+                }
+                entry.root.Nodes.Add(skyboxNode);
             }
 
             // if ambientMode is not Flat, use sein_imageBaseLighting extension

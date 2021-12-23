@@ -28,16 +28,14 @@ namespace XREngine
         public string fileName;
         public string ConversionPath => Path.Combine(PipelineSettings.ConversionFolder, fileName);
         
+        
 
-        public string exportFolder;
         public string ExportPath
         {
             get
             {
-                if(exportFolder == null)
-                {
-                    exportFolder = PipelineSettings.XREProjectFolder;
-                }
+                string exportFolder = PipelineSettings.XREProjectFolder + "/assets/";
+                /*
                 if(fileName == null)
                 {
                     fileName = "";
@@ -46,8 +44,9 @@ namespace XREngine
                 if(!extensionCheck.IsMatch(fileName))
                 {
                     return Path.Combine(exportFolder, fileName + ".glb");
-                }
-                return Path.Combine(exportFolder, fileName); ;
+                }*/
+                //return Path.Combine(exportFolder, fileName); ;
+                return exportFolder;
             }
         }
         
@@ -75,12 +74,11 @@ namespace XREngine
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Current Output Path: ", ExportPath);
             fileName = EditorGUILayout.TextField("Name:", fileName);
 
             if (GUILayout.Button("Set Output Directory"))
             {
-                exportFolder = EditorUtility.SaveFolderPanel("Output Directory", exportFolder, "");
+                PipelineSettings.XREProjectFolder = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.XREProjectFolder, "");
             }
             GUILayout.Space(8);
             GUILayout.Label("Export Components:");
@@ -89,11 +87,14 @@ namespace XREngine
             GUILayout.Space(8);
             PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
 
-
-            if(GUILayout.Button("Export"))
+            if(PipelineSettings.XREProjectFolder != null)
             {
-                Export();
+                if (GUILayout.Button("Export"))
+                {
+                    Export();
+                }
             }
+           
         }
 
         Dictionary<Transform, string> lodRegistry;
@@ -193,7 +194,7 @@ namespace XREngine
             {
                 Directory.CreateDirectory(PipelineSettings.ConversionFolder);
             }
-
+            string exportFolder = Path.Combine(PipelineSettings.XREProjectFolder, "assets");
             DirectoryInfo outDir = new DirectoryInfo(exportFolder);
             if(!outDir.Exists)
             {
@@ -281,12 +282,12 @@ namespace XREngine
             if (SystemInfo.operatingSystem.ToLower().Contains("mac"))
             {
                 //mac
-                proc.StandardInput.WriteLine(string.Format("\"/usr/local/bin/node\" gltf_converter.js {0}", fileName));
+                proc.StandardInput.WriteLine(string.Format("\"/usr/local/bin/node\" gltf_converter.js {0} \"{1}\"", fileName, ExportPath));
             }
             else
             {
                 //windows
-                proc.StandardInput.WriteLine(string.Format("\"C:/Program Files/nodejs/node.exe\" gltf_converter.js {0}", fileName));
+                proc.StandardInput.WriteLine(string.Format("\"C:/Program Files/nodejs/node.exe\" gltf_converter.js {0} \"{1}\"", fileName, ExportPath));
             }
                 
             

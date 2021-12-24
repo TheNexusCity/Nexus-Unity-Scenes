@@ -131,18 +131,25 @@ namespace XREngine
                 CubemapFace[] faces = Enumerable.Range(0, 6).Select((i) => (CubemapFace)i).ToArray();
                 string[] fNames = new string[]
                 {
-                    "posx",
                     "negx",
+                    "posx",
                     "posy",
                     "negy",
+                    
                     "posz",
                     "negz"
+                    
+                    /*"negz",
+                    "posz"*/
                 };
                 Texture2D[] faceTexes = faces.Select((x, i) =>
                 {
                     Texture2D result = new Texture2D(cubemap.width, cubemap.height);// cubemap.format, false);
-                    result.SetPixels(cubemap.GetPixels(x));
+                    var pix = cubemap.GetPixels(x);
+                    System.Array.Reverse(pix);
+                    result.SetPixels(pix);
                     result.Apply();
+
                     string facePath = string.Format("{0}/{1}.jpg", nuPath, fNames[i]);
                     File.WriteAllBytes(facePath, result.EncodeToJPG());
                     return result;

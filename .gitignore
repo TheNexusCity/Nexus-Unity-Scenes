@@ -119,6 +119,8 @@ dist
 /[Aa]ssets/Bakery/
 /[Aa]ssets/[Ee]ditor/x64/[Bb]akery/
 
+# ignore Pipeline default settings conf file
+/[Pp]ipeline/*.conf
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data

@@ -14,6 +14,8 @@ NodeJS >12.0
 
 Unity >2020
 
+Bakery Lightmapper (optional)
+
 ## Getting Started
 Run the applicable 'init-pipeline' script from the root project directory.
 

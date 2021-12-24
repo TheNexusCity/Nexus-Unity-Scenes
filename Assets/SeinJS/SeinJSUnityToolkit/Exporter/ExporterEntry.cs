@@ -202,11 +202,7 @@ namespace SeinJS
             var rp = tr.GetComponent<RPComponent>();
             if(rp)
             {
-                extras = new JProperty("extras", new JObject
-                    (
-                        new JProperty(rp.Type, new JObject()),
-                        new JProperty("realitypack.entity", tr.name)
-                    ));
+                extras = rp.Serialized;
             }
             
 

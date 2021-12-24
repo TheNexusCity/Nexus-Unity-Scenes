@@ -8,6 +8,8 @@ using UnityEngine;
 using SeinJS;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using XREngine.GLTF;
+using System.Linq;
 
 namespace XREngine
 {
@@ -25,8 +27,7 @@ namespace XREngine
 
         Exporter exporter;
 
-        public string fileName;
-        public string ConversionPath => Path.Combine(PipelineSettings.ConversionFolder, fileName);
+        public string ConversionPath => Path.Combine(PipelineSettings.ConversionFolder, PipelineSettings.GLTFName);
         
         
 
@@ -35,27 +36,11 @@ namespace XREngine
             get
             {
                 string exportFolder = PipelineSettings.XREProjectFolder + "/assets/";
-                /*
-                if(fileName == null)
-                {
-                    fileName = "";
-                }
-                Regex extensionCheck = new Regex(".*glb");
-                if(!extensionCheck.IsMatch(fileName))
-                {
-                    return Path.Combine(exportFolder, fileName + ".glb");
-                }*/
-                //return Path.Combine(exportFolder, fileName); ;
+
                 return exportFolder;
             }
         }
         
-
-        private void OnEnable()
-        {
-            fileName = EditorSceneManager.GetActiveScene().name;
-        }
-
         private void OnFocus()
         {
             if(exporter == null)
@@ -74,7 +59,7 @@ namespace XREngine
 
         private void OnGUI()
         {
-            fileName = EditorGUILayout.TextField("Name:", fileName);
+            PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", PipelineSettings.GLTFName);
 
             if (GUILayout.Button("Set Output Directory"))
             {
@@ -86,7 +71,13 @@ namespace XREngine
             PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
             GUILayout.Space(8);
             PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
-
+            
+            GUILayout.Space(16);
+            if(GUILayout.Button("Save Settings as Default"))
+            {
+                PipelineSettings.SaveSettings();
+            }
+            GUILayout.Space(16);
             if(PipelineSettings.XREProjectFolder != null)
             {
                 if (GUILayout.Button("Export"))
@@ -122,6 +113,54 @@ namespace XREngine
             }
         }
 
+        private void FormatForExportingSkybox()
+        {
+            if (PipelineSettings.ExportSkybox)
+            {
+                var skyMat = RenderSettings.skybox;
+                var cubemap = skyMat.GetTexture("_Tex") as Cubemap;
+                string srcPath = AssetDatabase.GetAssetPath(cubemap);
+                string srcName = Regex.Match(srcPath, @"(?<=.*/)\w*(?=\.hdr)").Value;
+                string nuPath = Path.Combine(PipelineSettings.XREProjectFolder, "cubemap");
+                var cubemapDir = new DirectoryInfo(nuPath);
+                if (!cubemapDir.Exists)
+                {
+                    cubemapDir.Create();
+                }
+
+                CubemapFace[] faces = Enumerable.Range(0, 6).Select((i) => (CubemapFace)i).ToArray();
+                string[] fNames = new string[]
+                {
+                    "posx",
+                    "negx",
+                    "posy",
+                    "negy",
+                    "posz",
+                    "negz"
+                };
+                Texture2D[] faceTexes = faces.Select((x, i) =>
+                {
+                    Texture2D result = new Texture2D(cubemap.width, cubemap.height);// cubemap.format, false);
+                    result.SetPixels(cubemap.GetPixels(x));
+                    result.Apply();
+                    string facePath = string.Format("{0}/{1}.jpg", nuPath, fNames[i]);
+                    File.WriteAllBytes(facePath, result.EncodeToJPG());
+                    return result;
+                }).ToArray();
+
+                GameObject skyboxGO = new GameObject("__skybox__");
+                skyboxGO.AddComponent<SkyBox>();
+            }
+        }
+            
+        private void CleanupExportingSkybox()
+        {
+            var skyboxes = FindObjectsOfType<SkyBox>();
+            for(int i = 0; i < skyboxes.Length; i++)
+            {
+                DestroyImmediate(skyboxes[i].gameObject);
+            }
+        }
         /// <summary>
         /// Formats the scene to correctly export colliders to match XREngine colliders spec
         /// </summary>
@@ -216,7 +255,7 @@ namespace XREngine
             }
 
             //set exporter path
-            ExporterSettings.Export.name = fileName;
+            ExporterSettings.Export.name = PipelineSettings.GLTFName;
             ExporterSettings.Export.folder = PipelineSettings.ConversionFolder;
 
             FormatForExportingLODs();
@@ -224,6 +263,11 @@ namespace XREngine
             if(PipelineSettings.ExportColliders)
             {
                 FormatForExportingColliders();
+            }
+
+            if(PipelineSettings.ExportSkybox)
+            {
+                FormatForExportingSkybox();
             }
 
             //convert materials to SeinPBR
@@ -237,6 +281,11 @@ namespace XREngine
             }
 
             CleanupExportingLODs();
+
+            if(PipelineSettings.ExportSkybox)
+            {
+                CleanupExportingSkybox();
+            }
 
             //restore materials
             StandardToSeinPBR.RestoreMaterials();
@@ -278,7 +327,7 @@ namespace XREngine
             proc.StandardInput.AutoFlush = true;
             proc.StandardInput.WriteLine(string.Format("cd {0}", PipelineSettings.PipelineFolder));
             proc.StandardInput.Flush();
-
+            string fileName = PipelineSettings.GLTFName;
             if (SystemInfo.operatingSystem.ToLower().Contains("mac"))
             {
                 //mac

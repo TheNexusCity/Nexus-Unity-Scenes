@@ -60,6 +60,7 @@ Export any Unity scene as a GLB with menu item XREngine->Export Scene. This will
 
 **Instancing**: Any Gameobjects which share the same mesh and material will be instanced by default. Currently only meshes with one material are supported. As previously noted, baking lightmaps onto Gameobjects that share the same mesh and material will break instancing.
 
+**Skybox**: If the scene has a skybox with a valid cubemap, then it is exported into the project. Currently only supports one cubemap per XRE project.
 
 ## Known Issues
 

@@ -14,7 +14,7 @@ using XREngine;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
-using XREngine.GLTF;
+using XREngine.RealityPack;
 
 namespace SeinJS
 {
@@ -23,6 +23,7 @@ namespace SeinJS
         TaskManager _taskManager;
         bool _isDone;
         bool _userStopped;
+        Dictionary<UnityEngine.Mesh, UnityEngine.Mesh> glLinks;
         //public delegate void ProgressCallback(string step, string details, int current, int total);
 
         public EditorExporter()
@@ -47,6 +48,8 @@ namespace SeinJS
 
         private void ExportOne(ExporterEntry entry)
         {
+            glLinks = new Dictionary<UnityEngine.Mesh, UnityEngine.Mesh>();
+
             var root = entry.root;
             root.Asset = new Asset();
             root.Asset.Generator = Config.GeneratorName;
@@ -188,6 +191,38 @@ namespace SeinJS
 
             bool hasLightmap = renderer.lightmapIndex >= 0;
 
+            if ((hasLightmap && PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE) ||
+                Regex.IsMatch(AssetDatabase.GetAssetPath(mesh), @".*\.glb"))
+            {
+                MeshFilter filt = tr.GetComponent<MeshFilter>();
+
+                string nuMeshPath = PipelineSettings.PipelineAssetsFolder.Replace(Application.dataPath, "Assets") + renderer.transform.name + "_" + System.DateTime.Now.Ticks + ".asset";
+
+                UnityEngine.Mesh nuMesh = Object.Instantiate(mesh);
+                
+                AssetDatabase.CreateAsset(nuMesh, nuMeshPath);
+                AssetDatabase.Refresh();
+                if(hasLightmap)
+                {
+                    var off = renderer.lightmapScaleOffset;
+                    var nuUv2s = nuMesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
+                    nuMesh.uv2 = nuUv2s;
+                    nuMesh.UploadMeshData(false);
+                }
+                if(filt != null)
+                    filt.sharedMesh = nuMesh;
+                else
+                {
+                    SkinnedMeshRenderer mrend = tr.GetComponent<SkinnedMeshRenderer>();
+                    if(mrend != null)
+                    {
+                        mrend.sharedMesh = nuMesh;
+                    }
+                }
+                glLinks[nuMesh] = mesh;
+                mesh = nuMesh;
+            }
+
             var result = entry.SaveMesh(mesh, renderer);
             var id = result.key;
             var needProcessMatrials = result.value;
@@ -226,22 +261,18 @@ namespace SeinJS
 
                     if (!hasComponent)
                     {
-
-                        ExportNormalMaterial(materials[i], primitive, entry, (MeshRenderer)renderer);
+                        //if (renderer.GetType() == typeof(SkinnedMeshRenderer))
+                        //    renderer = null;
+                        ExportNormalMaterial(materials[i], primitive, entry, renderer);
                     }
 
                     i += 1;
                 }
             }
-
-            if(hasLightmap)
-            {
-
-            }
         }
 
 
-        private void ExportNormalMaterial(UnityEngine.Material material, MeshPrimitive primitive, ExporterEntry entry, MeshRenderer renderer)
+        private void ExportNormalMaterial(UnityEngine.Material material, MeshPrimitive primitive, ExporterEntry entry, Renderer renderer)
         {
             primitive.Material = entry.SaveNormalMaterial(material, renderer);
         }
@@ -282,7 +313,7 @@ namespace SeinJS
                     parent.Children.Add(id);
                 }
             }
-
+            
             foreach (var trs in entry.transformsInSameActor.Values)
 			{
                 var names = new Dictionary<string, int>();
@@ -317,7 +348,7 @@ namespace SeinJS
         {
             if (tr.GetComponent<UnityEngine.Animation>())
             {
-                Debug.LogError("Only support animator now !");
+                //Debug.LogError("Only support animator now !");
                 return;
             }
 
@@ -436,8 +467,25 @@ namespace SeinJS
             }
         }
 
+        private void RestoreGLLinks()
+        {
+            if (glLinks != null)
+            {
+                MeshFilter[] filts = GameObject.FindObjectsOfType<MeshFilter>();
+                foreach(var filt in filts)
+                {
+                    if(glLinks.ContainsKey(filt.sharedMesh))
+                    {
+                        filt.sharedMesh = glLinks[filt.sharedMesh];
+                    }
+                }
+            }
+            glLinks = null;
+        }
+
         private void Clear()
         {
+            RestoreGLLinks();
             PipelineSettings.ClearPipelineJunk();
             ExporterUtils.FinishExport();
             ExtensionManager.FinishExport();

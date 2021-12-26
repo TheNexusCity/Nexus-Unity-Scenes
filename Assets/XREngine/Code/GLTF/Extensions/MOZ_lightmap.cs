@@ -5,7 +5,7 @@ using GLTF.Schema;
 using Newtonsoft.Json.Linq;
 using SeinJS;
 
-namespace XREngine.GLTF
+namespace XREngine.RealityPack
 {
     public class MOZ_lightmap : Extension
     {

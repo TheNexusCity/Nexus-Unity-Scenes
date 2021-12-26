@@ -8,6 +8,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace XREngine
 {
@@ -30,24 +31,33 @@ namespace XREngine
             public string XREProjectFolder;
             public bool ExportColliders;
             public bool ExportSkybox;
+            public bool ExportEnvmap;
             public LightmapMode lightmapMode;
             public int CombinedTextureResolution;
             public void Apply()
             {
                 PipelineSettings.GLTFName = GLTFName;
                 PipelineSettings.XREProjectFolder = this.XREProjectFolder;
+                
                 PipelineSettings.ExportColliders = this.ExportColliders;
                 PipelineSettings.ExportSkybox = this.ExportSkybox;
+                PipelineSettings.ExportEnvmap = ExportEnvmap;
+
                 PipelineSettings.lightmapMode = this.lightmapMode;
+
                 PipelineSettings.CombinedTextureResolution = this.CombinedTextureResolution;
             }
             public void Set()
             {
                 GLTFName = PipelineSettings.GLTFName;
                 XREProjectFolder = PipelineSettings.XREProjectFolder;
+               
                 ExportColliders = PipelineSettings.ExportColliders;
                 ExportSkybox = PipelineSettings.ExportSkybox;
+                ExportEnvmap = PipelineSettings.ExportEnvmap;
+                
                 lightmapMode = PipelineSettings.lightmapMode;
+                
                 CombinedTextureResolution = PipelineSettings.CombinedTextureResolution;
             }
         }
@@ -55,7 +65,7 @@ namespace XREngine
         public static readonly string ConversionFolder = Application.dataPath + "/../Outputs/GLTF/";
         public static readonly string PipelineFolder = Application.dataPath + "/../Pipeline/";
         public static readonly string configFile = PipelineFolder + "settings.conf";
-
+        public static readonly string PipelineAssetsFolder = Application.dataPath + "/XREngine/PipelineAssets/";
         public static string GLTFName;
         public static string XREProjectFolder;// = Application.dataPath + "/../Outputs/GLB/";
         public static string XRELocalPath => "https://localhost:8642/" + 
@@ -63,6 +73,7 @@ namespace XREngine
         
         public static bool ExportColliders;
         public static bool ExportSkybox;
+        public static bool ExportEnvmap;
 
         public static LightmapMode lightmapMode;
 
@@ -96,8 +107,8 @@ namespace XREngine
 
         internal static void ClearPipelineJunk()
         {
-            Regex filter = new Regex(@".*\.(jpg|png|tga)");
-            var pipelineFiles = Directory.GetFiles(PipelineFolder);
+            Regex filter = new Regex(@".*\.(jpg|png|tga|asset|mat)");
+            var pipelineFiles = Directory.GetFiles(PipelineFolder).Concat(Directory.GetFiles(PipelineAssetsFolder));
             foreach(var path in pipelineFiles)
             {
                 if(filter.IsMatch(path))

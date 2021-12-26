@@ -17,6 +17,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using XREngine;
 using System.Linq;
+using XREngine.RealityPack;
 
 namespace SeinJS
 {
@@ -237,7 +238,7 @@ namespace SeinJS
             return id;
         }
 
-        public Pair<MeshId, bool> SaveMesh(UnityEngine.Mesh mesh, Renderer renderer)
+        public Pair<MeshId, bool>SaveMesh(UnityEngine.Mesh mesh, Renderer renderer)
         {
             if (root.Meshes == null)
             {
@@ -268,13 +269,27 @@ namespace SeinJS
                 //have different offsets, then the mesh is duplicated, with each having their respective lightmap scaleoffset
                 //baked into their uv2
             {
-                UnityEngine.Mesh nuMesh = UnityEngine.Mesh.Instantiate(mesh);
-                var off = renderer.lightmapScaleOffset;
-                nuMesh.uv2 = mesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
-                mesh = nuMesh;
+                
+                
+
+                /*
+                var meshData = UnityEngine.Mesh.AcquireReadOnlyMeshData(mesh);
+                UnityEngine.Mesh.ApplyAndDisposeWritableMeshData(meshData, nuMesh);
+                nuMesh.UploadMeshData(false);
+                Debug.Log("=======");
+                Debug.Log(mesh.name);
+                Debug.Log("old tricount: " + mesh.triangles.Length);
+                Debug.Log("new tricount: " + nuMesh.triangles.Length);
+                if(mesh.triangles.Length != nuMesh.triangles.Length)
+                {
+                    Debug.LogWarning("tricount mismatch! for mesh " + mesh.name);
+                }
+                */
+                
+                
             }
             var attributes = GenerateAttributes(mesh, hasLightmap);
-            var targets = GenerateMorphTargets(mesh, renderer, m);
+            var targets = new List<Dictionary<string, AccessorId>>();// GenerateMorphTargets(mesh, renderer, m);
             m.Name = mesh.name;
             m.Primitives = new List<MeshPrimitive>();
             
@@ -495,13 +510,13 @@ namespace SeinJS
                 return;
             }
 
-            //if (bufferView == null)
-            //{
+            if (bufferView == null)
+            {
                 bufferView = CreateStreamBufferView(mesh.name + "-indices-"+i);
-            //}
+            }
 
             primitive.Indices = AccessorToId(
-                ExporterUtils.PackToBuffer(bufferView.streamBuffer, mesh.GetTriangles(i), GLTFComponentType.UnsignedShort, (int[] data, int index) => {
+                ExporterUtils.PackToBuffer(bufferView.streamBuffer, mesh.GetTriangles(i), GLTFComponentType.UnsignedInt, (int[] data, int index) => {
                     var offset = index % 3;
 
                     // reverse vertex sort
@@ -524,7 +539,7 @@ namespace SeinJS
         {
             int stride = 3 * 4; 
 
-            if (mesh.normals.Length > 0 && !ExporterSettings.Export.unlit)
+            if (mesh.normals.Length > 0)// && !ExporterSettings.Export.unlit)
             {
                 stride += 3 * 4;
             }
@@ -544,7 +559,7 @@ namespace SeinJS
                 stride += 2 * 4;
             }
 
-            if (mesh.tangents.Length > 0 && !ExporterSettings.Export.unlit)
+            if (mesh.tangents.Length > 0)// && !ExporterSettings.Export.unlit)
             {
                 stride += 4 * 4;
             }
@@ -586,7 +601,7 @@ namespace SeinJS
             return new AccessorId { Id = root.Accessors.Count - 1, Root = root };
         }
 
-        public MaterialId SaveNormalMaterial(UnityEngine.Material material, UnityEngine.MeshRenderer renderer = null)
+        public MaterialId SaveNormalMaterial(UnityEngine.Material material, UnityEngine.Renderer renderer = null)
         {
             var mid = material.GetInstanceID();
             int rid = -1;

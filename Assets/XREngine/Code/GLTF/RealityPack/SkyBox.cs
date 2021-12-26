@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-namespace XREngine.GLTF
+namespace XREngine.RealityPack
 {
     public class SkyBox : RPComponent
     {

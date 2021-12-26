@@ -8,7 +8,7 @@ using UnityEngine;
 using SeinJS;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-using XREngine.GLTF;
+using XREngine.RealityPack;
 using System.Linq;
 
 namespace XREngine
@@ -69,6 +69,7 @@ namespace XREngine
             GUILayout.Label("Export Components:");
             PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
             PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
+            PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
             GUILayout.Space(8);
             PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
             
@@ -168,6 +169,21 @@ namespace XREngine
                 DestroyImmediate(skyboxes[i].gameObject);
             }
         }
+
+        private void FormatForExportingEnvmap()
+        {
+            GameObject envmapGO = new GameObject("__envmap__");
+            envmapGO.AddComponent<Envmap>();
+        }
+
+        private void CleanupExportEnvmap()
+        {
+            var envmaps = FindObjectsOfType<Envmap>();
+            for (int i = 0; i < envmaps.Length; i++)
+            {
+                DestroyImmediate(envmaps[i].gameObject);
+            }
+        }
         /// <summary>
         /// Formats the scene to correctly export colliders to match XREngine colliders spec
         /// </summary>
@@ -230,7 +246,16 @@ namespace XREngine
             }
         }
 
-
+        struct MeshRestore
+        {
+            public List<Mesh> remove;
+            public Mesh restore;
+            public MeshRestore(List<Mesh> _remove, Mesh _restore)
+            {
+                remove = _remove;
+                restore = _restore;
+            }
+        }
         private void Export()
         {
             
@@ -261,10 +286,39 @@ namespace XREngine
                 subDir.Delete(true);
             }
 
+            List<MeshRestore> restorer = new List<MeshRestore>();
             //set exporter path
             ExporterSettings.Export.name = PipelineSettings.GLTFName;
             ExporterSettings.Export.folder = PipelineSettings.ConversionFolder;
-
+            
+            //split up meshes due to gltf export bug
+            /*
+            var multiMeshes = FindObjectsOfType<MeshFilter>()
+                .Select((filt) => new System.Tuple<GameObject, Mesh>(filt.gameObject, filt.sharedMesh))
+                .Where((mesh) => Regex.IsMatch(AssetDatabase.GetAssetPath(mesh.Item2), @".*\.glb"));
+            foreach(var multiMesh in multiMeshes)
+            {
+                List<Mesh> remove = new List<Mesh>();
+                
+                Mesh firstSubmesh = null;
+                for(int i = 0; i < multiMesh.Item2.subMeshCount; i++)
+                {
+                    Mesh nuMesh = MeshExtension.GetSubmesh(multiMesh.Item2, i);
+                    string nuPath = PipelineSettings.PipelineAssetsFolder.Replace(Application.dataPath, "Assets") + multiMesh.Item1.name + "_" + i + ".asset";
+                    AssetDatabase.CreateAsset(nuMesh, nuPath);
+                    AssetDatabase.Refresh();
+                    if (i > 0)
+                    {
+                        GameObject nuGO = GameObject.Instantiate(multiMesh.Item1, multiMesh.Item1.transform);
+                        nuGO.GetComponent<MeshFilter>().sharedMesh = nuMesh;
+                    }
+                    else firstSubmesh = nuMesh;
+                    remove.Add(nuMesh);
+                }
+                restorer.Add(new MeshRestore(remove, multiMesh.Item2));
+                multiMesh.Item1.GetComponent<MeshFilter>().sharedMesh = firstSubmesh;
+            }
+            */
             FormatForExportingLODs();
 
             if(PipelineSettings.ExportColliders)
@@ -277,10 +331,23 @@ namespace XREngine
                 FormatForExportingSkybox();
             }
 
+            if(PipelineSettings.ExportEnvmap)
+            {
+                FormatForExportingEnvmap();
+            }
+
+            
+
             //convert materials to SeinPBR
             StandardToSeinPBR.AllToSeinPBR();
-
-            exporter.Export();
+            try
+            {
+                exporter.Export();
+            } catch (System.NullReferenceException e)
+            {
+                UnityEngine.Debug.LogWarning(e);
+            }
+            
 
             if(PipelineSettings.ExportColliders)
             {
@@ -293,6 +360,27 @@ namespace XREngine
             {
                 CleanupExportingSkybox();
             }
+
+            if(PipelineSettings.ExportEnvmap)
+            {
+                CleanupExportEnvmap();
+            }
+            /*
+            foreach (var restore in restorer)
+            {
+                var subGOs = FindObjectsOfType<Transform>().Where((tr) =>
+                    tr.GetComponent<MeshFilter>() &&
+                    restore.remove.Contains(tr.GetComponent<MeshFilter>().sharedMesh)
+                    ).Select((tr) => tr.gameObject).ToList();
+                for (int i = 0; i < subGOs.Count; i++)
+                {
+                    var subGO = subGOs[i];
+                    if (i == 0)
+                        subGO.GetComponent<MeshFilter>().sharedMesh = restore.restore;
+                    else
+                        DestroyImmediate(subGO);
+                }
+            }*/
 
             //restore materials
             StandardToSeinPBR.RestoreMaterials();

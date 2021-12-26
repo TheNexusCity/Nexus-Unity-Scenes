@@ -6,7 +6,7 @@ using GLTF.Schema;
 using Newtonsoft.Json.Linq;
 using System;
 
-namespace XREngine.GLTF
+namespace XREngine.RealityPack
 {
     public class MOZ_lightmap_Factory : SeinExtensionFactory
     {

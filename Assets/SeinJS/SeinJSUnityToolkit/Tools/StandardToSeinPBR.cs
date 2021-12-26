@@ -12,12 +12,14 @@ using System.IO;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using XREngine;
 
 namespace SeinJS
 {
     public class StandardToSeinPBR : MonoBehaviour
     {
         static Dictionary<Material, string> backups;
+        static Dictionary<Material, Material> gltfLinks;
 
         [MenuItem("Assets/Materials to SeinPBR", priority = 0)]
         public static void AssetsToSeinPBR()
@@ -83,7 +85,7 @@ namespace SeinJS
         [MenuItem("GameObject/Sein/Materials to SeinPBR", priority = 11)]
         private static void GOToSeinPBR()
         {
-            HashSet<Material> materials = new HashSet<Material>();
+            HashSet<System.Tuple<Renderer, Material>> materials = new HashSet<Tuple<Renderer, Material>>();
             var transforms = Selection.GetTransforms(SelectionMode.Deep);
             foreach (var tr in transforms)
             {
@@ -96,14 +98,14 @@ namespace SeinJS
                 var sms = mr.sharedMaterials;
                 foreach (var m in sms)
                 {
-                    materials.Add(m);
+                    materials.Add(new Tuple<Renderer, Material>(mr, m));
                 }
             }
 
             var needBak = CheckNeedBackup();
             foreach (var m in materials)
             {
-                ToSeinPBR(m, needBak);
+                ToSeinPBR(m.Item2, needBak, m.Item1);
             }
 
             AssetDatabase.Refresh();
@@ -134,24 +136,14 @@ namespace SeinJS
         public static void AllToSeinPBR()
         {
             backups = new Dictionary<Material, string>();
+            gltfLinks = new Dictionary<Material, Material>();
             Regex backupPattern = new Regex(".*_bak");
             var gos = Enumerable.Range(0,EditorSceneManager.sceneCount).Select((i) => 
                 EditorSceneManager.GetSceneAt(i)).SelectMany((scene) => 
                     scene.GetRootGameObjects().SelectMany((root) => 
                         RecursiveGetGOs(root)));
 
-            Material[] materials = gos.SelectMany((go) => 
-            {
-                Renderer rend = go.GetComponent<Renderer>();
-                if(rend != null)
-                {
-                    return rend.sharedMaterials;
-                }
-                else
-                {
-                    return new Material[0];
-                }
-            }).ToArray();//((Material[])Resources.FindObjectsOfTypeAll(typeof(Material))).Where((mat) => !backupPattern.IsMatch(mat.name)).ToArray();
+            var materials = gos.SelectMany((go) => go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().sharedMaterials : new Material[0]).Distinct();
             var needBak = true;// CheckNeedBackup();
             foreach (var m in materials)
             {
@@ -170,12 +162,13 @@ namespace SeinJS
                 "No"
             );
         }
-
-        private static void ToSeinPBR(Material material, bool backup = true)
+        private static Shader glShader = AssetDatabase.LoadAssetAtPath<Shader>("Packages/com.atteneder.gltfast/Runtime/Shader/Built-In/glTFPbrMetallicRoughness.shader");
+        private static void ToSeinPBR(Material material, bool backup = true, Renderer renderer = null)
         {
-            var name = material.shader.name;
+            var shader = material.shader;
+            var name = shader.name;
 
-            if (!(name == "Standard" || name == "Autodesk Interactive" || name == "Standard (Specular setup)"))
+            if (!(name == "Standard" || name == "Autodesk Interactive" || name == "Standard (Specular setup)") && !(shader == glShader))
             {
                 return;
             }
@@ -184,10 +177,10 @@ namespace SeinJS
 
             if (backup)
             {
-                BackupMaterial(material);
+                BackupMaterial(ref material);
             }
 
-            ConvertMaterial(material);
+            ConvertMaterial(material, renderer);
         }
 
         [MenuItem("SeinJS/Restore Materials")]
@@ -199,12 +192,44 @@ namespace SeinJS
                 material.shader = backup.shader;
                 material.CopyPropertiesFromMaterial(backup);
             }
+            var renderers = FindObjectsOfType<Renderer>();
+            foreach(var renderer in renderers)
+            {
+                renderer.sharedMaterials = renderer.sharedMaterials.Select((sharedMat) =>
+                    gltfLinks.ContainsKey(sharedMat) ? gltfLinks[sharedMat] : sharedMat
+                ).ToArray();
+            }
+            
         }
 
-        private static void BackupMaterial(Material material)
+        private static void BackupMaterial(ref Material material)
         {
+            
             var origPath = AssetDatabase.GetAssetPath(material);
-            var fname = Path.GetFileNameWithoutExtension(origPath);
+            if(Regex.IsMatch(origPath, @".*\.glb"))
+            {
+                Debug.Log("Creating link Material to glb");
+                Material dupe = new Material(material);
+                string dupePath = PipelineSettings.PipelineAssetsFolder + material.name + "_" + DateTime.Now.Ticks + ".mat";
+                dupePath = dupePath.Replace(Application.dataPath, "Assets");
+                AssetDatabase.CreateAsset(dupe, dupePath);
+                AssetDatabase.Refresh();
+                gltfLinks[dupe] = material;
+                Debug.Log("material " + dupe.name + " linked to glb material " + material.name);
+
+                Material check = material;
+                foreach (var renderer in FindObjectsOfType<Renderer>())
+                {
+                    renderer.sharedMaterials = renderer.sharedMaterials.Select((sharedMat) => 
+                        sharedMat == check ? dupe : sharedMat
+                    ).ToArray();
+                }
+                material = dupe;
+                origPath = dupePath;
+            }
+                
+            
+            var fname = Path.GetFileNameWithoutExtension(origPath) + "_" + material.name;
             var dir = Path.GetDirectoryName(origPath) + "/bak";
 
             if (!Directory.Exists(dir))
@@ -219,11 +244,13 @@ namespace SeinJS
             backups[material] = nuPath + ".mat";
         }
 
-        private static void ConvertMaterial(Material mat)
+        
+
+        private static void ConvertMaterial(Material mat, Renderer rend)
         {
             var material = new Material(Shader.Find("Sein/PBR"));
 
-            bool isMetal = mat.shader.name == "Standard" || mat.shader.name == "Autodesk Interactive";
+            bool isMetal = mat.shader == glShader || mat.shader.name == "Standard" || mat.shader.name == "Autodesk Interactive";
             if (!isMetal)
             {
                 material.SetInt("workflow", (int)SeinPBRShaderGUI.Workflow.Specular);
@@ -272,6 +299,10 @@ namespace SeinJS
                     {
                         roughnessTexture = (Texture2D)mat.GetTexture("_SpecGlossMap");
                     }
+                    else if (mat.shader == glShader)
+                    {
+                        roughnessTexture = (Texture2D)mat.GetTexture("_MetallicGlossMap");
+                    }
                     else
                     {
                         var channel = mat.GetInt("_SmoothnessTextureChannel");
@@ -292,7 +323,16 @@ namespace SeinJS
                 }
 
                 material.SetFloat("_metallic", hasPBRMap ? 1.0f : mat.GetFloat("_Metallic"));
-                material.SetFloat("_roughness", mat.shader.name == "Autodesk Interactive" ? 1.0f : mat.GetFloat("_GlossMapScale"));
+                if (mat.shader == glShader)
+                {
+                    material.SetFloat("_roughness", mat.GetFloat("_Roughness"));
+                }
+                else
+                {
+                    
+                    material.SetFloat("_roughness", mat.shader.name == "Autodesk Interactive" ? 1.0f : mat.GetFloat("_GlossMapScale"));
+                }
+                
             }
             else
             {
@@ -312,6 +352,10 @@ namespace SeinJS
             {
                 Texture2D bumpTexture = mat.GetTexture("_BumpMap") as Texture2D;
                 // Check if it's a normal or a bump map
+                if(AssetDatabase.GetAssetPath(bumpTexture) == null || AssetDatabase.GetAssetPath(bumpTexture) == "" || Regex.IsMatch(AssetDatabase.GetAssetPath(bumpTexture), @".*\.glb"))
+                {
+                    bumpTexture = GenerateAsset(bumpTexture);
+                }
                 TextureImporter im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(bumpTexture)) as TextureImporter;
                 bool isBumpMap = im.convertToNormalmap;
 
@@ -344,14 +388,57 @@ namespace SeinJS
                 material.SetTexture("_occlusionMap", occlusionTexture);
                 material.SetFloat("_occlusionStrength", mat.GetFloat("_OcclusionStrength"));
             }
-
+            /*
+            material.name = mat.name;
+            string assetPath = PipelineSettings.PipelineAssetsFolder + material.name + DateTime.Now.Ticks + ".mat";
+            AssetDatabase.CreateAsset(material, assetPath);
+            material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            rend.sharedMaterials = Enumerable.Range(0, rend.sharedMaterials.Length).Select((i) =>
+            {
+                if (rend.sharedMaterials[i] == mat)
+                {
+                    return material;
+                }
+                else return rend.sharedMaterials[i];
+            }).ToArray();
+            */
+            ///*
             mat.shader = Shader.Find("Sein/PBR");
             mat.CopyPropertiesFromMaterial(material);
+            //*/
         }
 
+        private static Texture2D GenerateAsset(Texture2D tex)
+        {
+            Texture2D nuTex = new Texture2D(tex.width, tex.height, tex.format, tex.mipmapCount, false);
+            Graphics.CopyTexture(tex, nuTex);
+            nuTex.Apply();
+            if (!Directory.Exists(PipelineSettings.PipelineAssetsFolder))
+            {
+                Directory.CreateDirectory(PipelineSettings.PipelineAssetsFolder);
+            }
+            string nuPath = PipelineSettings.PipelineAssetsFolder + System.DateTime.Now.Ticks + ".png";
+            string localPath = nuPath.Replace(Application.dataPath, "Assets");
+            File.WriteAllBytes(nuPath, nuTex.EncodeToPNG());
+            //AssetDatabase.ImportAsset(localPath);
+            AssetDatabase.Refresh();
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(localPath);
+        }
         private static void ChangeSRGB(ref Texture2D tex, bool isSRGB)
         {
+            
             TextureImporter im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) as TextureImporter;
+            if(im == null)
+            {
+                tex = GenerateAsset(tex);
+                
+                im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) as TextureImporter;
+            }
+            if(im == null)
+            {
+                Debug.LogError("uh oh");
+            }
             if (im.sRGBTexture == isSRGB)
             {
                 return;
@@ -428,7 +515,6 @@ namespace SeinJS
                 File.Delete(path + ".meta");
                 AssetDatabase.Refresh();
             }
-
             AssetDatabase.CreateAsset(material, path + ".mat");
         }
     }

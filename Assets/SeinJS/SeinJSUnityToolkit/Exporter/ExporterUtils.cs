@@ -15,7 +15,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using XREngine;
-using XREngine.GLTF;
+using XREngine.RealityPack;
 
 namespace SeinJS
 {
@@ -298,7 +298,7 @@ namespace SeinJS
             return bytes;
         }
 
-        public static GLTF.Schema.Material ConvertMaterial(UnityEngine.Material material, ExporterEntry entry, MeshRenderer renderer = null)
+        public static GLTF.Schema.Material ConvertMaterial(UnityEngine.Material material, ExporterEntry entry, Renderer renderer = null)
         {
             if (material.shader.name.Contains("Standard") || material.shader.name.Contains("Autodesk Interactive"))
             {
@@ -320,7 +320,7 @@ namespace SeinJS
             return null;
         }
 
-        private static Texture2D GenerateBakedDiffuse(Texture2D tex, Texture2D lightmapTex, UnityEngine.Mesh mesh, MeshRenderer renderer)
+        private static Texture2D GenerateBakedDiffuse(Texture2D tex, Texture2D lightmapTex, UnityEngine.Mesh mesh, Renderer renderer)
         {
             //AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(tex), "Assets/Debug/tex.png");
             //AssetDatabase.CreateAsset(tex, "Assets/Debug/tex.asset");
@@ -418,10 +418,11 @@ namespace SeinJS
             return result;
         }
 
-        private static GLTF.Schema.Material ConvertSeinPBRMaterial(UnityEngine.Material mat, ExporterEntry entry, MeshRenderer renderer)
+        private static GLTF.Schema.Material ConvertSeinPBRMaterial(UnityEngine.Material mat, ExporterEntry entry, Renderer renderer)
         {
             var material = new GLTF.Schema.Material();
             material.Name = mat.name;
+            material.DoubleSided = true;
             bool hasLightmap = renderer != null && renderer.lightmapIndex >= 0;
 
             bool isMetal = mat.GetInt("workflow") == 0;
@@ -600,11 +601,15 @@ namespace SeinJS
             if (mat.GetTexture("_normalMap") != null)
             {
                 var normMap = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap"));
-                if(material.Extras == null)
+                /*if(material.Extras == null)
                 {
                     material.Extras = new JObject();
-                }
-                material.Extras = (new JProperty("normalMap", normMap.Id));
+                }*/
+                material.NormalTexture = new NormalTextureInfo
+                {
+                    Index = normMap
+                };
+                //material.Extras = (new JProperty("normalMap", normMap.Id));
                 /*material.NormalTexture = new NormalTextureInfo
                 {
                     Index = entry.SaveTexture((Texture2D)mat.GetTexture("_normalMap")),

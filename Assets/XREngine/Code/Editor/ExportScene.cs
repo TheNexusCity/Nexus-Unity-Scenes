@@ -16,13 +16,25 @@ namespace XREngine
 {
     public class ExportScene : EditorWindow
     {
+        public enum State
+        {
+            INITIAL,
+            PRE_EXPORT,
+            EXPORTING,
+            POST_EXPORT,
+            RESTORING,
+            ERROR
+        }
 
+        State state;
+        bool doDebug;
         string defaultMatPath = @"Assets/XREngine/Content/Materials/Block.mat";
 
         [MenuItem("XREngine/Export Scene")]
         static void Init()
         {
             ExportScene window = (ExportScene)EditorWindow.GetWindow(typeof(ExportScene));
+            window.state = State.INITIAL;
             window.Show();
         }
 
@@ -60,41 +72,71 @@ namespace XREngine
 
         private void OnGUI()
         {
-            PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", PipelineSettings.GLTFName);
+            #region Initial Menu
+            switch (state)
+            {
 
-            if (GUILayout.Button("Set Output Directory"))
-            {
-                PipelineSettings.XREProjectFolder = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.XREProjectFolder, "");
+                case State.INITIAL:
+                    PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", PipelineSettings.GLTFName);
+
+                    if (GUILayout.Button("Set Output Directory"))
+                    {
+                        PipelineSettings.XREProjectFolder = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.XREProjectFolder, "");
+                    }
+                    GUILayout.Space(8);
+                    GUILayout.Label("Export Components:");
+                    PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
+                    PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
+                    PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
+                    GUILayout.Space(8);
+                    PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
+                    GUILayout.Space(8);
+                    PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
+
+
+                    GUILayout.Space(16);
+                    if (GUILayout.Button("Save Settings as Default"))
+                    {
+                        PipelineSettings.SaveSettings();
+                    }
+                    GUILayout.Space(16);
+                    if (PipelineSettings.XREProjectFolder != null)
+                    {
+                        doDebug = EditorGUILayout.Toggle("Debug Execution", doDebug);
+                        if (GUILayout.Button("Export"))
+                        {
+                            state = State.PRE_EXPORT;
+                            Export();
+                        }
+                    }
+                    break;
+
+
+                #endregion
+
+                #region Debugging Stepper
+                case State.PRE_EXPORT:
+                    if(GUILayout.Button("Continue"))
+                    {
+                        state++;
+                    }
+                    break;
+
+                case State.POST_EXPORT:
+                    if (GUILayout.Button("Continue"))
+                    {
+                        state++;
+                    }
+                    break;
+                #endregion
+                default:
+                    GUILayout.Label("Exporting...");
+                    break;
             }
-            GUILayout.Space(8);
-            GUILayout.Label("Export Components:");
-            PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
-            PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
-            PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
-            GUILayout.Space(8);
-            PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
-            GUILayout.Space(8);
-            PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
-            
-            
-            GUILayout.Space(16);
-            if(GUILayout.Button("Save Settings as Default"))
-            {
-                PipelineSettings.SaveSettings();
-            }
-            GUILayout.Space(16);
-            if(PipelineSettings.XREProjectFolder != null)
-            {
-                if (GUILayout.Button("Export"))
-                {
-                    Export();
-                }
-            }
-           
         }
 
         #region UTILITY FUNCTIONS
-       
+
         Dictionary<Material, Material> matLinks;
         Dictionary<string, Material> matRegistry;
         private Material BackupMaterial(Material material, Renderer _renderer)
@@ -329,7 +371,7 @@ namespace XREngine
             texLinks = new Dictionary<Texture2D, Texture2D>();
 
             var mats = FindObjectsOfType<Renderer>()
-                .Where((x) => x.gameObject.activeInHierarchy)
+                .Where((x) => x.gameObject.activeInHierarchy && x.enabled)
                 .SelectMany((rend) => rend.sharedMaterials.Select((mat) => new MatRend(mat, rend)))
                 .Where((x) => x != null && x.mat != null && x.rend != null).ToArray();
             for (int i = 0; i < mats.Length; i++)
@@ -522,7 +564,7 @@ namespace XREngine
             cRoot = new GameObject("Colliders", typeof(ColliderParent));
             //Dictionary<Collider, Transform> parents = new Dictionary<Collider, Transform>();
             Material defaultMat = AssetDatabase.LoadMainAssetAtPath(defaultMatPath) as Material;
-            Collider[] colliders = GameObject.FindObjectsOfType<Collider>();
+            Collider[] colliders = GameObject.FindObjectsOfType<Collider>().Where((col) => col.gameObject.activeInHierarchy).ToArray();
             foreach(var collider in colliders)
             {
                 Transform xform = collider.transform;
@@ -559,6 +601,7 @@ namespace XREngine
                     clone.transform.rotation = rotation;
                     clone.name += "__COLLIDER__";
                     MeshRenderer rend = clone.GetComponent<MeshRenderer>();
+                    rend.enabled = true;
                     rend.lightmapIndex = -1;
                 }
                 
@@ -579,6 +622,11 @@ namespace XREngine
 
         private void Export()
         {
+            EditorCoroutineUtility.StartCoroutine(ExportSequence(), this);
+        }
+        private IEnumerator ExportSequence()
+        {
+            
             DirectoryInfo directory = new DirectoryInfo(PipelineSettings.ConversionFolder);
             if(!directory.Exists)
             {
@@ -638,6 +686,11 @@ namespace XREngine
             
             //convert materials to SeinPBR
             StandardToSeinPBR.AllToSeinPBR();
+            if(doDebug)
+            {
+                while (state != State.EXPORTING) yield return null;
+            }
+            
             try
             {
                 exporter.Export();
@@ -645,8 +698,14 @@ namespace XREngine
             {
                 UnityEngine.Debug.LogError("export error:" + e);
             }
+
+            state = State.POST_EXPORT;
+
+            if(doDebug)
+            {
+                while (state != State.RESTORING) yield return null;
+            }
            
-            
 
             if (PipelineSettings.ExportColliders)
             {
@@ -676,20 +735,11 @@ namespace XREngine
                 CleanupExportEnvmap();
             }
 
-            
-
-            
-
-            
-
-            
-
             //clear generated pipeline assets
             PipelineSettings.ClearPipelineJunk();
 
             //now execute the GLTF conversion script in the Pipeline folder
 
-            
             var cmd = new ProcessStartInfo();
 
             if (SystemInfo.operatingSystem.ToLower().Contains("mac"))
@@ -743,6 +793,7 @@ namespace XREngine
             UnityEngine.Debug.Log(proc.StandardOutput.ReadToEnd());
             UnityEngine.Debug.Log(proc.StandardError.ReadToEnd());
             //OpenInFileBrowser.Open(exportFolder);*/
+            state = State.INITIAL;
         }
     }
 

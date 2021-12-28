@@ -185,7 +185,7 @@ namespace SeinJS
             {
                 return;
             }
-            if (mesh.triangles.Length == 0)
+            if (mesh.vertexCount == 0)
                 return;
 
             if (tr.GetComponent<SeinSprite>() != null)

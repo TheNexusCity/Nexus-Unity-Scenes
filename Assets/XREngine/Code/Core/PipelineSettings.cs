@@ -123,6 +123,11 @@ namespace XREngine
             var pipelineFiles = Directory.GetFiles(PipelineFolder).Concat(Directory.GetFiles(PipelineAssetsFolder));
             foreach(var path in pipelineFiles)
             {
+                if(Directory.Exists(path))
+                {
+                    Directory.Delete(path);
+                }
+                else
                 if(filter.IsMatch(path))
                 {
                     File.Delete(path);

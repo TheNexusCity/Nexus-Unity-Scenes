@@ -143,11 +143,24 @@ namespace SeinJS
                     scene.GetRootGameObjects().SelectMany((root) => 
                         RecursiveGetGOs(root)));
 
-            var materials = gos.SelectMany((go) => go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().sharedMaterials : new Material[0]).Distinct();
-            var needBak = true;// CheckNeedBackup();
+            var materials = gos.Where((go) => go.activeInHierarchy)
+                .SelectMany((go) => 
+                    go.GetComponent<Renderer>() ? 
+                    go.GetComponent<Renderer>().sharedMaterials : 
+                    new Material[0]).Distinct().ToList();
+            //var needBak = true;// CheckNeedBackup();
+            
+            for(int i = 0; i < materials.Count; i++)
+            {
+                Material mat = materials[i];
+                BackupMaterial(ref mat);
+            }
+
+            AssetDatabase.Refresh();
+            
             foreach (var m in materials)
             {
-                ToSeinPBR(m, needBak);
+                ToSeinPBR(m, false);
             }
 
             AssetDatabase.Refresh();
@@ -175,11 +188,6 @@ namespace SeinJS
 
             Debug.Log("Converting: " + material.name);
 
-            if (backup)
-            {
-                BackupMaterial(ref material);
-            }
-
             ConvertMaterial(material, renderer);
         }
 
@@ -192,6 +200,7 @@ namespace SeinJS
                 material.shader = backup.shader;
                 material.CopyPropertiesFromMaterial(backup);
             }
+            /*
             var renderers = FindObjectsOfType<Renderer>();
             foreach(var renderer in renderers)
             {
@@ -199,34 +208,17 @@ namespace SeinJS
                     gltfLinks.ContainsKey(sharedMat) ? gltfLinks[sharedMat] : sharedMat
                 ).ToArray();
             }
+            */
             
         }
 
+        
+
         private static void BackupMaterial(ref Material material)
         {
-            
-            var origPath = AssetDatabase.GetAssetPath(material);
-            if(Regex.IsMatch(origPath, @".*\.glb"))
-            {
-                Debug.Log("Creating link Material to glb");
-                Material dupe = new Material(material);
-                string dupePath = PipelineSettings.PipelineAssetsFolder + material.name + "_" + DateTime.Now.Ticks + ".mat";
-                dupePath = dupePath.Replace(Application.dataPath, "Assets");
-                AssetDatabase.CreateAsset(dupe, dupePath);
-                AssetDatabase.Refresh();
-                gltfLinks[dupe] = material;
-                Debug.Log("material " + dupe.name + " linked to glb material " + material.name);
 
-                Material check = material;
-                foreach (var renderer in FindObjectsOfType<Renderer>())
-                {
-                    renderer.sharedMaterials = renderer.sharedMaterials.Select((sharedMat) => 
-                        sharedMat == check ? dupe : sharedMat
-                    ).ToArray();
-                }
-                material = dupe;
-                origPath = dupePath;
-            }
+            var origPath = AssetDatabase.GetAssetPath(material);
+            
                 
             
             var fname = Path.GetFileNameWithoutExtension(origPath) + "_" + material.name;
@@ -351,12 +343,10 @@ namespace SeinJS
             if (mat.HasProperty("_BumpMap") && mat.GetTexture("_BumpMap") != null)
             {
                 Texture2D bumpTexture = mat.GetTexture("_BumpMap") as Texture2D;
+                string texPath = AssetDatabase.GetAssetPath(bumpTexture);
                 // Check if it's a normal or a bump map
-                if(AssetDatabase.GetAssetPath(bumpTexture) == null || AssetDatabase.GetAssetPath(bumpTexture) == "" || Regex.IsMatch(AssetDatabase.GetAssetPath(bumpTexture), @".*\.glb"))
-                {
-                    bumpTexture = GenerateAsset(bumpTexture);
-                }
-                TextureImporter im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(bumpTexture)) as TextureImporter;
+
+                TextureImporter im = AssetImporter.GetAtPath(texPath) as TextureImporter;
                 bool isBumpMap = im.convertToNormalmap;
 
                 if (isBumpMap)
@@ -408,36 +398,15 @@ namespace SeinJS
             //*/
         }
 
-        private static Texture2D GenerateAsset(Texture2D tex)
-        {
-            Texture2D nuTex = new Texture2D(tex.width, tex.height, tex.format, tex.mipmapCount, false);
-            Graphics.CopyTexture(tex, nuTex);
-            nuTex.Apply();
-            if (!Directory.Exists(PipelineSettings.PipelineAssetsFolder))
-            {
-                Directory.CreateDirectory(PipelineSettings.PipelineAssetsFolder);
-            }
-            string nuPath = PipelineSettings.PipelineAssetsFolder + System.DateTime.Now.Ticks + ".png";
-            string localPath = nuPath.Replace(Application.dataPath, "Assets");
-            File.WriteAllBytes(nuPath, nuTex.EncodeToPNG());
-            //AssetDatabase.ImportAsset(localPath);
-            AssetDatabase.Refresh();
-
-            return AssetDatabase.LoadAssetAtPath<Texture2D>(localPath);
-        }
+        
         private static void ChangeSRGB(ref Texture2D tex, bool isSRGB)
         {
             
             TextureImporter im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) as TextureImporter;
             if(im == null)
             {
-                tex = GenerateAsset(tex);
+                Debug.LogError("error importing texture " + tex);
                 
-                im = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) as TextureImporter;
-            }
-            if(im == null)
-            {
-                Debug.LogError("uh oh");
             }
             if (im.sRGBTexture == isSRGB)
             {

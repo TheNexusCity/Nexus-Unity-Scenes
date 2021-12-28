@@ -450,25 +450,20 @@ namespace SeinJS
                 if (mat.GetTexture("_baseColorMap") != null || doCombineBake)
                 {
                     var tex = (Texture2D)mat.GetTexture("_baseColorMap");
-                    if(tex == null)
-                    {
-                        var lightmapParms = LightmapSettings.lightmaps[renderer.lightmapIndex];
-
-                        var lightmapCol = lightmapParms.lightmapColor;
-
-                        tex = new Texture2D(lightmapCol.width, lightmapCol.height);
-                    }
+                    
 
                     if (doCombineBake)
                     {
-                        var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                         var lightmapParms = LightmapSettings.lightmaps[renderer.lightmapIndex];
 
                         var lightmapCol = lightmapParms.lightmapColor;
+                        if (tex == null)
+                        {
+                            tex = new Texture2D(lightmapCol.width, lightmapCol.height);
+                        }
 
-
+                        var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                         tex = GenerateBakedDiffuse(tex, lightmapCol, mesh, renderer);
-
                     }
 
                     var id = entry.SaveTexture(tex, hasTransparency);
@@ -832,7 +827,7 @@ namespace SeinJS
 
         public static string[] GetAssetOutPath(string assetPath, string format = null)
         {
-            Debug.Log("apath: " + assetPath);
+            //Debug.Log("apath: " + assetPath);
             string pathInArchive = ExporterUtils.CleanPath(Path.GetDirectoryName(assetPath).Replace("Assets/Resources/", "").Replace("Assets/", ""));
             string exportDir = Path.Combine(ExporterSettings.Export.folder, pathInArchive);
 

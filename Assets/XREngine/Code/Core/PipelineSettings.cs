@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Linq;
 
+
+
 namespace XREngine
 {
     public enum LightmapMode
@@ -19,7 +21,12 @@ namespace XREngine
         BAKE_SEPARATE
     }
 
-    
+    public enum MeshExportMode
+    {
+        DEFAULT,
+        COMBINE,
+        NO_MESHES
+    }
 
     [InitializeOnLoad]
     public static class PipelineSettings
@@ -32,6 +39,7 @@ namespace XREngine
             public bool ExportColliders;
             public bool ExportSkybox;
             public bool ExportEnvmap;
+            public MeshExportMode meshMode;
             public LightmapMode lightmapMode;
             public int CombinedTextureResolution;
             public void Apply()
@@ -44,6 +52,7 @@ namespace XREngine
                 PipelineSettings.ExportEnvmap = ExportEnvmap;
 
                 PipelineSettings.lightmapMode = this.lightmapMode;
+                PipelineSettings.meshMode = meshMode;
 
                 PipelineSettings.CombinedTextureResolution = this.CombinedTextureResolution;
             }
@@ -57,7 +66,8 @@ namespace XREngine
                 ExportEnvmap = PipelineSettings.ExportEnvmap;
                 
                 lightmapMode = PipelineSettings.lightmapMode;
-                
+                meshMode = PipelineSettings.meshMode;
+
                 CombinedTextureResolution = PipelineSettings.CombinedTextureResolution;
             }
         }
@@ -74,6 +84,8 @@ namespace XREngine
         public static bool ExportColliders;
         public static bool ExportSkybox;
         public static bool ExportEnvmap;
+
+        public static MeshExportMode meshMode;
 
         public static LightmapMode lightmapMode;
 
@@ -105,7 +117,7 @@ namespace XREngine
             File.WriteAllText(configFile, JsonConvert.SerializeObject(data, Formatting.Indented));
         }
 
-        internal static void ClearPipelineJunk()
+        public static void ClearPipelineJunk()
         {
             Regex filter = new Regex(@".*\.(jpg|png|tga|asset|mat)");
             var pipelineFiles = Directory.GetFiles(PipelineFolder).Concat(Directory.GetFiles(PipelineAssetsFolder));

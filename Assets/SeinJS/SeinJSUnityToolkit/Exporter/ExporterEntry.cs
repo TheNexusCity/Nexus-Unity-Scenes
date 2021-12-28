@@ -263,31 +263,6 @@ namespace SeinJS
                 return new Pair<MeshId, bool>(_mesh2Id[mesh][cacheId], false);
             }
 
-            if(PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE &&
-                hasLightmap) //threejs does not currently (december 2021) support lightmap scaling or offsetting. thus 
-                //we must bake the lightmap scale and offset into the mesh uv2. if two instances of the same mesh
-                //have different offsets, then the mesh is duplicated, with each having their respective lightmap scaleoffset
-                //baked into their uv2
-            {
-                
-                
-
-                /*
-                var meshData = UnityEngine.Mesh.AcquireReadOnlyMeshData(mesh);
-                UnityEngine.Mesh.ApplyAndDisposeWritableMeshData(meshData, nuMesh);
-                nuMesh.UploadMeshData(false);
-                Debug.Log("=======");
-                Debug.Log(mesh.name);
-                Debug.Log("old tricount: " + mesh.triangles.Length);
-                Debug.Log("new tricount: " + nuMesh.triangles.Length);
-                if(mesh.triangles.Length != nuMesh.triangles.Length)
-                {
-                    Debug.LogWarning("tricount mismatch! for mesh " + mesh.name);
-                }
-                */
-                
-                
-            }
             var attributes = GenerateAttributes(mesh, hasLightmap);
             var targets = new List<Dictionary<string, AccessorId>>();// GenerateMorphTargets(mesh, renderer, m);
             m.Name = mesh.name;
@@ -335,12 +310,7 @@ namespace SeinJS
             {
                 return _mesh2attrs[mesh];
             }
-            Vector2[] _tmp = null;
-            /*if(bakedLightmaps)
-            {
-                _tmp = mesh.uv;
-                mesh.uv = mesh.uv2;
-            }*/
+
             var attrs= new Dictionary<string, AccessorId>();
 
             int maxStride = GetBufferLength(mesh);

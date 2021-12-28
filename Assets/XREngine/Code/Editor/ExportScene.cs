@@ -10,18 +10,31 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using XREngine.RealityPack;
 using System.Linq;
+using System;
 
 namespace XREngine
 {
     public class ExportScene : EditorWindow
     {
+        public enum State
+        {
+            INITIAL,
+            PRE_EXPORT,
+            EXPORTING,
+            POST_EXPORT,
+            RESTORING,
+            ERROR
+        }
 
+        State state;
+        bool doDebug;
         string defaultMatPath = @"Assets/XREngine/Content/Materials/Block.mat";
 
         [MenuItem("XREngine/Export Scene")]
         static void Init()
         {
             ExportScene window = (ExportScene)EditorWindow.GetWindow(typeof(ExportScene));
+            window.state = State.INITIAL;
             window.Show();
         }
 
@@ -59,36 +72,186 @@ namespace XREngine
 
         private void OnGUI()
         {
-            PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", PipelineSettings.GLTFName);
+            #region Initial Menu
+            switch (state)
+            {
 
-            if (GUILayout.Button("Set Output Directory"))
-            {
-                PipelineSettings.XREProjectFolder = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.XREProjectFolder, "");
+                case State.INITIAL:
+                    PipelineSettings.GLTFName = EditorGUILayout.TextField("Name:", PipelineSettings.GLTFName);
+
+                    if (GUILayout.Button("Set Output Directory"))
+                    {
+                        PipelineSettings.XREProjectFolder = EditorUtility.SaveFolderPanel("Output Directory", PipelineSettings.XREProjectFolder, "");
+                    }
+                    GUILayout.Space(8);
+                    GUILayout.Label("Export Components:");
+                    PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
+                    PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
+                    PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
+                    GUILayout.Space(8);
+                    PipelineSettings.meshMode = (MeshExportMode)EditorGUILayout.EnumPopup("Mesh Export Options", PipelineSettings.meshMode);
+                    GUILayout.Space(8);
+                    PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
+
+
+                    GUILayout.Space(16);
+                    if (GUILayout.Button("Save Settings as Default"))
+                    {
+                        PipelineSettings.SaveSettings();
+                    }
+                    GUILayout.Space(16);
+                    if (PipelineSettings.XREProjectFolder != null)
+                    {
+                        doDebug = EditorGUILayout.Toggle("Debug Execution", doDebug);
+                        if (GUILayout.Button("Export"))
+                        {
+                            state = State.PRE_EXPORT;
+                            Export();
+                        }
+                    }
+                    break;
+
+
+                #endregion
+
+                #region Debugging Stepper
+                case State.PRE_EXPORT:
+                    if(GUILayout.Button("Continue"))
+                    {
+                        state++;
+                    }
+                    break;
+
+                case State.POST_EXPORT:
+                    if (GUILayout.Button("Continue"))
+                    {
+                        state++;
+                    }
+                    break;
+                #endregion
+                default:
+                    GUILayout.Label("Exporting...");
+                    break;
             }
-            GUILayout.Space(8);
-            GUILayout.Label("Export Components:");
-            PipelineSettings.ExportColliders = EditorGUILayout.Toggle("Colliders", PipelineSettings.ExportColliders);
-            PipelineSettings.ExportSkybox = EditorGUILayout.Toggle("Skybox", PipelineSettings.ExportSkybox);
-            PipelineSettings.ExportEnvmap = EditorGUILayout.Toggle("Envmap", PipelineSettings.ExportEnvmap);
-            GUILayout.Space(8);
-            PipelineSettings.lightmapMode = (LightmapMode)EditorGUILayout.EnumPopup("Lightmap Mode", PipelineSettings.lightmapMode);
-            
-            GUILayout.Space(16);
-            if(GUILayout.Button("Save Settings as Default"))
-            {
-                PipelineSettings.SaveSettings();
-            }
-            GUILayout.Space(16);
-            if(PipelineSettings.XREProjectFolder != null)
-            {
-                if (GUILayout.Button("Export"))
-                {
-                    Export();
-                }
-            }
-           
         }
 
+        #region UTILITY FUNCTIONS
+
+        Dictionary<Material, Material> matLinks;
+        Dictionary<string, Material> matRegistry;
+        private Material BackupMaterial(Material material, Renderer _renderer)
+        {
+            if (matRegistry == null) matRegistry = new Dictionary<string, Material>();
+            
+            string registryKey = string.Format("{0}_{1}", material.name, _renderer ? _renderer.lightmapIndex : -2);
+            
+            if (matRegistry.ContainsKey(registryKey)) 
+                return matRegistry[registryKey];
+            
+            string origPath = AssetDatabase.GetAssetPath(material);
+            if (origPath == null || Regex.IsMatch(origPath, @".*\.glb"))
+            {
+                UnityEngine.Debug.Log("Creating link Material to glb");
+                Material dupe = new Material(material);
+                string dupePath = PipelineSettings.PipelineAssetsFolder + material.name + "_" + DateTime.Now.Ticks + ".mat";
+                dupePath = dupePath.Replace(Application.dataPath, "Assets");
+                if(!Directory.Exists(PipelineSettings.PipelineAssetsFolder))
+                {
+                    Directory.CreateDirectory(PipelineSettings.PipelineAssetsFolder);
+                }
+                AssetDatabase.CreateAsset(dupe, dupePath);
+
+                if(matLinks == null)
+                {
+                    matLinks = new Dictionary<Material, Material>();
+                }
+                matLinks[dupe] = material;
+                UnityEngine.Debug.Log("material " + dupe.name + " linked to glb material " + material.name);
+                matRegistry[registryKey] = dupe;
+                Material check = material;
+                foreach (var renderer in FindObjectsOfType<Renderer>())
+                {
+                    renderer.sharedMaterials = renderer.sharedMaterials.Select((sharedMat) =>
+                        sharedMat &&
+                        sharedMat.name == check.name ? dupe : sharedMat
+                    ).ToArray();
+                }
+
+                return dupe;
+            }
+            return material;
+        }
+        private Tuple<Material, string, string>[] BackupTextures(ref Material mat)
+        {
+            //Material mat = _mat;
+            /*
+            string[] mapTests = new string[]
+            {
+                "_MainTex",
+                "_BumpMap",
+                "_EmissionMap",
+                "_MetallicGlossMap",
+                "_OcclusionMap",
+                "_baseColorMap"
+            };
+            */
+            var maps = mat.GetTexturePropertyNames();
+            var matTexes = new List<Texture>();
+            for(int i = 0; i < maps.Length; i++)
+            {
+                matTexes.Add(mat.GetTexture(maps[i]));
+            }
+            var textures = maps
+                .Select((map, i) =>
+                {
+                    Texture tex = matTexes[i];
+                    if (tex == null) return null;
+                    return new Tuple<string, Texture>(map, tex);
+                })
+                .Where((x) => x != null && x.Item2.GetType() == typeof(Texture2D))
+                .Select((x) => new Tuple<string, Texture2D>(x.Item1, (Texture2D)x.Item2))
+                .ToArray();
+            var texPaths = new List<Tuple<Material, string, string>>();
+            foreach(var texture in textures)
+            {
+                var tex = texture.Item2;
+                string texPath = AssetDatabase.GetAssetPath(tex);
+                if (texPath == null || texPath == "" || Regex.IsMatch(texPath, @".*\.glb"))
+                {
+                    string nuPath;
+                    Texture2D nuTex = GenerateAsset(tex, out nuPath);
+                    texPaths.Add(new Tuple<Material, string, string>(mat, texture.Item1, nuPath));
+                }
+            }
+            return texPaths.ToArray();
+        }
+
+        Dictionary<Texture2D, Texture2D> texLinks;
+        private Texture2D GenerateAsset(Texture2D tex, out string path)
+        {
+            Texture2D nuTex = new Texture2D(tex.width, tex.height, tex.format, tex.mipmapCount, false);
+            nuTex.name = tex.name + "_" + System.DateTime.Now.Ticks;
+            Graphics.CopyTexture(tex, nuTex);
+            nuTex.Apply();
+            if (!Directory.Exists(PipelineSettings.PipelineAssetsFolder))
+            {
+                Directory.CreateDirectory(PipelineSettings.PipelineAssetsFolder);
+            }
+            string nuPath = PipelineSettings.PipelineAssetsFolder.Replace(Application.dataPath, "Assets") + nuTex.name + ".png";
+            string localPath = nuPath.Replace(Application.dataPath, "Assets");
+            File.WriteAllBytes(nuPath, nuTex.EncodeToPNG());
+            //AssetDatabase.ImportAsset(localPath);
+            
+            UnityEngine.Debug.Log("Generated texture " + nuTex + " from " + tex);
+            if (texLinks == null)
+                texLinks = new Dictionary<Texture2D, Texture2D>();
+            texLinks[nuTex] = tex;
+            path = nuPath;
+            return nuTex;
+        }
+        #endregion
+
+        #region LODS
         Dictionary<Transform, string> lodRegistry;
         private void FormatForExportingLODs()
         {
@@ -113,7 +276,9 @@ namespace XREngine
                 lodRegistry = null;
             }
         }
+        #endregion
 
+        #region SKYBOX
         private void FormatForExportingSkybox()
         {
             if (PipelineSettings.ExportSkybox)
@@ -169,7 +334,9 @@ namespace XREngine
                 DestroyImmediate(skyboxes[i].gameObject);
             }
         }
+        #endregion
 
+        #region ENVMAP
         private void FormatForExportingEnvmap()
         {
             GameObject envmapGO = new GameObject("__envmap__");
@@ -184,6 +351,210 @@ namespace XREngine
                 DestroyImmediate(envmaps[i].gameObject);
             }
         }
+        #endregion
+
+        #region MESH BAKING
+        class MatRend
+        {
+            public Material mat;
+            public Renderer rend;
+            public MatRend(Material _mat, Renderer _rend)
+            {
+                mat = _mat;
+                rend = _rend;
+            }
+        }
+        private void SerializeMaterials()
+        {
+            matRegistry = new Dictionary<string, Material>();
+            matLinks = new Dictionary<Material, Material>();
+            texLinks = new Dictionary<Texture2D, Texture2D>();
+
+            var mats = FindObjectsOfType<Renderer>()
+                .Where((x) => x.gameObject.activeInHierarchy && x.enabled)
+                .SelectMany((rend) => rend.sharedMaterials.Select((mat) => new MatRend(mat, rend)))
+                .Where((x) => x != null && x.mat != null && x.rend != null).ToArray();
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var mat = mats[i].mat;
+                var rend = mats[i].rend;
+                mats[i].mat = BackupMaterial(mat, rend);
+            }
+            AssetDatabase.Refresh();
+            var remaps = new List<Tuple<Material, string, string>>();
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var mat = mats[i].mat;
+                remaps.AddRange(BackupTextures(ref mat));
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            for (int i = 0; i < remaps.Count; i++)
+            {
+                var remap = remaps[i];
+                var nuMat = remap.Item1;
+                var nuTex = AssetDatabase.LoadAssetAtPath<Texture2D>(remap.Item3);
+                nuMat.SetTexture(remap.Item2, nuTex);
+                UnityEngine.Debug.Log("material " + nuMat + " path of " + AssetDatabase.GetAssetPath(nuMat));
+                UnityEngine.Debug.Log("setting material " + nuMat + " texture " + remap.Item2 + " to " + nuTex + ", path of " + AssetDatabase.GetAssetPath(nuTex));
+
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            UnityEngine.Debug.Log("processed materials");
+            var updates = mats.GroupBy((mat) => mat.rend).Select((rGroup) =>
+            new Dictionary<Renderer, Material[]>
+            (
+                new KeyValuePair<Renderer, Material[]>[]
+                {
+                    new KeyValuePair<Renderer, Material[]>
+                    (
+                        rGroup.Key,
+                        rGroup.Select((r) => r.mat).ToArray()
+                    )
+                }
+            )).Aggregate((rGroup1, rGroup2) =>
+            {
+                if (rGroup2 == null) return rGroup1;
+                if (rGroup1 == null) return rGroup2;
+                foreach (var key in rGroup2.Keys)
+                {
+                    rGroup1[key] = rGroup2[key];
+                }
+                return rGroup2;
+            });
+            foreach(var update in updates)
+            {
+                update.Key.sharedMaterials = update.Value;
+            }
+        }
+
+        private void DeserializeMaterials()
+        {
+            var renderers = FindObjectsOfType<Renderer>();
+            foreach(var renderer in renderers)
+            {
+                renderer.sharedMaterials = renderer.sharedMaterials.Select
+                (
+                    (mat) =>
+                    {
+                        if(matLinks.ContainsKey(mat))
+                        {
+                            mat = matLinks[mat];
+                        }
+                        //DeserializeTextures(ref mat);
+                        return mat;
+                    }
+                ).ToArray();
+            }
+            matRegistry = null;
+            matLinks = null;
+            texLinks = null;
+        }
+
+        private void CreateBakedMeshes()
+        {
+            if(PipelineSettings.meshMode == MeshExportMode.DEFAULT ||
+               PipelineSettings.meshMode == MeshExportMode.COMBINE)
+            {
+                CreateUVBakedMeshes();
+                if(PipelineSettings.meshMode == MeshExportMode.COMBINE)
+                {
+                    CombineMeshes();
+                }
+            }
+        }
+
+        Dictionary<UnityEngine.Mesh, UnityEngine.Mesh> glLinks;
+        private void CreateUVBakedMeshes()
+        {
+            glLinks = new Dictionary<Mesh, Mesh>();
+            var renderers = FindObjectsOfType<Renderer>();
+            foreach(var renderer in renderers)
+            {
+                bool isSkinned = renderer.GetType() == typeof(SkinnedMeshRenderer);
+                Mesh mesh = null;
+                if (isSkinned)
+                {
+                    mesh = ((SkinnedMeshRenderer)renderer).sharedMesh;
+                }
+                else
+                {
+                    var filt = renderer.GetComponent<MeshFilter>();
+                    if (filt != null)
+                        mesh = filt.sharedMesh;
+                }
+                if (mesh == null) continue;
+                
+                bool hasLightmap = renderer.lightmapIndex >= 0;
+
+                if ((hasLightmap && PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE) ||
+                     Regex.IsMatch(AssetDatabase.GetAssetPath(mesh), @".*\.glb"))
+                {
+                    if(!Directory.Exists(PipelineSettings.PipelineAssetsFolder))
+                    {
+                        Directory.CreateDirectory(PipelineSettings.PipelineAssetsFolder);
+                    }
+                    string nuMeshPath = PipelineSettings.PipelineAssetsFolder.Replace(Application.dataPath, "Assets") + renderer.transform.name + "_" + System.DateTime.Now.Ticks + ".asset";
+                    UnityEngine.Mesh nuMesh = UnityEngine.Object.Instantiate(mesh);
+
+                    AssetDatabase.CreateAsset(nuMesh, nuMeshPath);
+                    
+                    if (hasLightmap)
+                    {
+                        var off = renderer.lightmapScaleOffset;
+                        var nuUv2s = nuMesh.uv2.Select((uv2) => uv2 * new Vector2(off.x, off.y) + new Vector2(off.z, off.w)).ToArray();
+                        nuMesh.uv2 = nuUv2s;
+                        nuMesh.UploadMeshData(false);
+                    }
+                    if (!isSkinned)
+                        renderer.GetComponent<MeshFilter>().sharedMesh = nuMesh;
+                    else
+                    {
+                        ((SkinnedMeshRenderer)renderer).sharedMesh = nuMesh;
+                    }
+                    glLinks[nuMesh] = mesh;
+                    mesh = nuMesh;
+                }
+            }
+            AssetDatabase.Refresh();
+        }
+
+        private void CombineMeshes()
+        {
+            var stagers = FindObjectsOfType<MeshStager>();
+            foreach(var stager in stagers)
+            {
+                stager.Execute(null);
+            }
+            AssetDatabase.Refresh();
+        }
+
+        private void CleanupMeshCombine()
+        {
+            MeshStager.ResetAll();
+        }
+
+        private void RestoreGLLinks()
+        {
+            if (glLinks != null)
+            {
+                MeshFilter[] filts = GameObject.FindObjectsOfType<MeshFilter>();
+                foreach (var filt in filts)
+                {
+                    if (filt && 
+                        filt.sharedMesh != null && 
+                        glLinks.ContainsKey(filt.sharedMesh))
+                    {
+                        filt.sharedMesh = glLinks[filt.sharedMesh];
+                    }
+                }
+            }
+            glLinks = null;
+        }
+        #endregion
+
+        #region COLLIDERS
         /// <summary>
         /// Formats the scene to correctly export colliders to match XREngine colliders spec
         /// </summary>
@@ -193,7 +564,7 @@ namespace XREngine
             cRoot = new GameObject("Colliders", typeof(ColliderParent));
             //Dictionary<Collider, Transform> parents = new Dictionary<Collider, Transform>();
             Material defaultMat = AssetDatabase.LoadMainAssetAtPath(defaultMatPath) as Material;
-            Collider[] colliders = GameObject.FindObjectsOfType<Collider>();
+            Collider[] colliders = GameObject.FindObjectsOfType<Collider>().Where((col) => col.gameObject.activeInHierarchy).ToArray();
             foreach(var collider in colliders)
             {
                 Transform xform = collider.transform;
@@ -230,6 +601,7 @@ namespace XREngine
                     clone.transform.rotation = rotation;
                     clone.name += "__COLLIDER__";
                     MeshRenderer rend = clone.GetComponent<MeshRenderer>();
+                    rend.enabled = true;
                     rend.lightmapIndex = -1;
                 }
                 
@@ -246,20 +618,15 @@ namespace XREngine
             }
         }
 
-        struct MeshRestore
-        {
-            public List<Mesh> remove;
-            public Mesh restore;
-            public MeshRestore(List<Mesh> _remove, Mesh _restore)
-            {
-                remove = _remove;
-                restore = _restore;
-            }
-        }
+        #endregion
+
         private void Export()
         {
+            EditorCoroutineUtility.StartCoroutine(ExportSequence(), this);
+        }
+        private IEnumerator ExportSequence()
+        {
             
-
             DirectoryInfo directory = new DirectoryInfo(PipelineSettings.ConversionFolder);
             if(!directory.Exists)
             {
@@ -286,39 +653,12 @@ namespace XREngine
                 subDir.Delete(true);
             }
 
-            List<MeshRestore> restorer = new List<MeshRestore>();
             //set exporter path
             ExporterSettings.Export.name = PipelineSettings.GLTFName;
             ExporterSettings.Export.folder = PipelineSettings.ConversionFolder;
+
             
-            //split up meshes due to gltf export bug
-            /*
-            var multiMeshes = FindObjectsOfType<MeshFilter>()
-                .Select((filt) => new System.Tuple<GameObject, Mesh>(filt.gameObject, filt.sharedMesh))
-                .Where((mesh) => Regex.IsMatch(AssetDatabase.GetAssetPath(mesh.Item2), @".*\.glb"));
-            foreach(var multiMesh in multiMeshes)
-            {
-                List<Mesh> remove = new List<Mesh>();
-                
-                Mesh firstSubmesh = null;
-                for(int i = 0; i < multiMesh.Item2.subMeshCount; i++)
-                {
-                    Mesh nuMesh = MeshExtension.GetSubmesh(multiMesh.Item2, i);
-                    string nuPath = PipelineSettings.PipelineAssetsFolder.Replace(Application.dataPath, "Assets") + multiMesh.Item1.name + "_" + i + ".asset";
-                    AssetDatabase.CreateAsset(nuMesh, nuPath);
-                    AssetDatabase.Refresh();
-                    if (i > 0)
-                    {
-                        GameObject nuGO = GameObject.Instantiate(multiMesh.Item1, multiMesh.Item1.transform);
-                        nuGO.GetComponent<MeshFilter>().sharedMesh = nuMesh;
-                    }
-                    else firstSubmesh = nuMesh;
-                    remove.Add(nuMesh);
-                }
-                restorer.Add(new MeshRestore(remove, multiMesh.Item2));
-                multiMesh.Item1.GetComponent<MeshFilter>().sharedMesh = firstSubmesh;
-            }
-            */
+
             FormatForExportingLODs();
 
             if(PipelineSettings.ExportColliders)
@@ -326,7 +666,13 @@ namespace XREngine
                 FormatForExportingColliders();
             }
 
-            if(PipelineSettings.ExportSkybox)
+            
+            
+            SerializeMaterials();
+
+            CreateBakedMeshes();
+            
+            if (PipelineSettings.ExportSkybox)
             {
                 FormatForExportingSkybox();
             }
@@ -337,22 +683,45 @@ namespace XREngine
             }
 
             
-
+            
             //convert materials to SeinPBR
             StandardToSeinPBR.AllToSeinPBR();
+            if(doDebug)
+            {
+                while (state != State.EXPORTING) yield return null;
+            }
+            
             try
             {
                 exporter.Export();
             } catch (System.NullReferenceException e)
             {
-                UnityEngine.Debug.LogWarning(e);
+                UnityEngine.Debug.LogError("export error:" + e);
             }
-            
 
-            if(PipelineSettings.ExportColliders)
+            state = State.POST_EXPORT;
+
+            if(doDebug)
+            {
+                while (state != State.RESTORING) yield return null;
+            }
+           
+
+            if (PipelineSettings.ExportColliders)
             {
                CleanUpExportingColliders();
             }
+
+
+            //restore materials
+            StandardToSeinPBR.RestoreMaterials();
+            if (PipelineSettings.meshMode == MeshExportMode.COMBINE)
+            {
+                CleanupMeshCombine();
+            }
+            RestoreGLLinks();
+            DeserializeMaterials();
+
 
             CleanupExportingLODs();
 
@@ -365,28 +734,11 @@ namespace XREngine
             {
                 CleanupExportEnvmap();
             }
-            /*
-            foreach (var restore in restorer)
-            {
-                var subGOs = FindObjectsOfType<Transform>().Where((tr) =>
-                    tr.GetComponent<MeshFilter>() &&
-                    restore.remove.Contains(tr.GetComponent<MeshFilter>().sharedMesh)
-                    ).Select((tr) => tr.gameObject).ToList();
-                for (int i = 0; i < subGOs.Count; i++)
-                {
-                    var subGO = subGOs[i];
-                    if (i == 0)
-                        subGO.GetComponent<MeshFilter>().sharedMesh = restore.restore;
-                    else
-                        DestroyImmediate(subGO);
-                }
-            }*/
 
-            //restore materials
-            StandardToSeinPBR.RestoreMaterials();
+            //clear generated pipeline assets
+            PipelineSettings.ClearPipelineJunk();
 
             //now execute the GLTF conversion script in the Pipeline folder
-
 
             var cmd = new ProcessStartInfo();
 
@@ -440,7 +792,8 @@ namespace XREngine
             //proc.WaitForExit();
             UnityEngine.Debug.Log(proc.StandardOutput.ReadToEnd());
             UnityEngine.Debug.Log(proc.StandardError.ReadToEnd());
-            //OpenInFileBrowser.Open(exportFolder);
+            //OpenInFileBrowser.Open(exportFolder);*/
+            state = State.INITIAL;
         }
     }
 

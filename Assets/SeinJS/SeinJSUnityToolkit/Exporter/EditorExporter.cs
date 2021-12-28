@@ -23,7 +23,7 @@ namespace SeinJS
         TaskManager _taskManager;
         bool _isDone;
         bool _userStopped;
-        Dictionary<UnityEngine.Mesh, UnityEngine.Mesh> glLinks;
+        //Dictionary<UnityEngine.Mesh, UnityEngine.Mesh> glLinks;
         //public delegate void ProgressCallback(string step, string details, int current, int total);
 
         public EditorExporter()
@@ -48,7 +48,7 @@ namespace SeinJS
 
         private void ExportOne(ExporterEntry entry)
         {
-            glLinks = new Dictionary<UnityEngine.Mesh, UnityEngine.Mesh>();
+            //glLinks = new Dictionary<UnityEngine.Mesh, UnityEngine.Mesh>();
 
             var root = entry.root;
             root.Asset = new Asset();
@@ -91,6 +91,8 @@ namespace SeinJS
                 {
                     continue;
                 }
+
+
 
                 ExportNode(tr, entry);
             }
@@ -183,12 +185,14 @@ namespace SeinJS
             {
                 return;
             }
+            if (mesh.vertexCount == 0)
+                return;
 
             if (tr.GetComponent<SeinSprite>() != null)
             {
                 return;
             }
-
+            /*
             bool hasLightmap = renderer.lightmapIndex >= 0;
 
             if ((hasLightmap && PipelineSettings.lightmapMode == LightmapMode.BAKE_SEPARATE) ||
@@ -222,7 +226,7 @@ namespace SeinJS
                 glLinks[nuMesh] = mesh;
                 mesh = nuMesh;
             }
-
+            */
             var result = entry.SaveMesh(mesh, renderer);
             var id = result.key;
             var needProcessMatrials = result.value;
@@ -467,26 +471,12 @@ namespace SeinJS
             }
         }
 
-        private void RestoreGLLinks()
-        {
-            if (glLinks != null)
-            {
-                MeshFilter[] filts = GameObject.FindObjectsOfType<MeshFilter>();
-                foreach(var filt in filts)
-                {
-                    if(glLinks.ContainsKey(filt.sharedMesh))
-                    {
-                        filt.sharedMesh = glLinks[filt.sharedMesh];
-                    }
-                }
-            }
-            glLinks = null;
-        }
+        
 
         private void Clear()
         {
-            RestoreGLLinks();
-            PipelineSettings.ClearPipelineJunk();
+            //RestoreGLLinks();
+            //PipelineSettings.ClearPipelineJunk();
             ExporterUtils.FinishExport();
             ExtensionManager.FinishExport();
             Resources.UnloadUnusedAssets();

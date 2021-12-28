@@ -118,7 +118,7 @@ dist
 /[Oo]utputs/
 /[Aa]ssets/Bakery/
 /[Aa]ssets/[Ee]ditor/x64/[Bb]akery/
-
+/[Aa]ssets/XREngine/PipelineAssets/
 # ignore Pipeline default settings conf file
 /[Pp]ipeline/*.conf
 

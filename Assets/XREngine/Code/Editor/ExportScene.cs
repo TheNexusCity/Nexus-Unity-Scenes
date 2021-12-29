@@ -657,7 +657,13 @@ namespace XREngine
             ExporterSettings.Export.name = PipelineSettings.GLTFName;
             ExporterSettings.Export.folder = PipelineSettings.ConversionFolder;
 
-            
+            //before we start staging the scene for export, invoke the OnExport event to have all
+            //active XRE nodes export files to the linked project
+
+            RPComponent.InvokeExport();
+
+            //TODO: move most of these export helper functions into the OnExport handlers of the
+            //      realitypack classes
 
             FormatForExportingLODs();
 

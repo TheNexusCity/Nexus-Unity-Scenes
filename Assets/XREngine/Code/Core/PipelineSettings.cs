@@ -78,9 +78,15 @@ namespace XREngine
         public static readonly string PipelineAssetsFolder = Application.dataPath + "/XREngine/PipelineAssets/";
         public static string GLTFName;
         public static string XREProjectFolder;// = Application.dataPath + "/../Outputs/GLB/";
+
+        public static string XREProjectName => 
+            Regex.Match(XREProjectFolder, @"(?<=[\\\/])[\w-_]+(?=[\\\/]*$)").Value;
+
         public static string XRELocalPath => "https://localhost:8642/" + 
             Regex.Match(XREProjectFolder, @"[\w-]+[\\/]+[\w-]+[\\/]*$").Value;
-        
+
+        public static string XREScriptsFolder => XREProjectFolder + "/assets/scripts/";
+
         public static bool ExportColliders;
         public static bool ExportSkybox;
         public static bool ExportEnvmap;
@@ -120,7 +126,7 @@ namespace XREngine
         public static void ClearPipelineJunk()
         {
             Regex filter = new Regex(@".*\.(jpg|png|tga|asset|mat)");
-            var pipelineFiles = Directory.GetFiles(PipelineFolder).Concat(Directory.GetFiles(PipelineAssetsFolder));
+            var pipelineFiles = Directory.GetFiles(PipelineFolder);
             foreach(var path in pipelineFiles)
             {
                 if(Directory.Exists(path))
@@ -133,6 +139,8 @@ namespace XREngine
                     File.Delete(path);
                 }
             }
+            
+            AssetDatabase.DeleteAsset(PipelineAssetsFolder.Replace(Application.dataPath, "Assets"));
         }
     }
 

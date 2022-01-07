@@ -10,6 +10,8 @@ Built-in export pipeline for Unity to https://github.com/XRFoundation/XREngine
 # Usage
 
 ## System Requirements
+Git LFS
+
 NodeJS >12.0
 
 Unity >2020
@@ -18,6 +20,10 @@ Bakery Lightmapper (optional)
 
 ## Getting Started
 Run the applicable 'init-pipeline' script from the root project directory.
+
+Open the project in Unity, then with the project open, download and run the GLTFast scoped registry installer (https://package-installer.glitch.me/v1/installer/OpenUPM/com.atteneder.gltfast?registry=https%3A%2F%2Fpackage.openupm.com&scope=com.atteneder). After the installation completes, you may need to reimport glb files to correctly import assets.
+
+Import Bakery or other Unity-compatible lightmapping utility.
 
 Export any Unity scene as a GLB with menu item XREngine->Export Scene. This will bring up an export configuration window. 
 
